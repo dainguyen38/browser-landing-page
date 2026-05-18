@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Languages, Clock as ClockIcon, Pin as PinIcon, CheckSquare, Eye, EyeOff, AlertTriangle, ThermometerSun, Maximize2 } from 'lucide-react'
+import { Languages, Clock as ClockIcon, Pin as PinIcon, CheckSquare, Eye, EyeOff, AlertTriangle, ThermometerSun, Maximize2, Gamepad2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ const WIDGET_ICONS: Record<WidgetId, React.ElementType> = {
   pinned: PinIcon,
   todo: CheckSquare,
   weather: ThermometerSun,
+  minigame: Gamepad2,
 }
 
 export function SettingsDialog({ open, onOpenChange }: Props) {
@@ -54,7 +55,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     location.reload()
   }
 
-  const widgetKeys: WidgetId[] = ['clock', 'pinned', 'todo', 'weather']
+  const widgetKeys: WidgetId[] = ['clock', 'pinned', 'todo', 'weather', 'minigame']
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

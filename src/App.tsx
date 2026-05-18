@@ -6,6 +6,7 @@ import { ClockWidget } from '@/components/widgets/ClockWidget'
 import { PinnedSitesWidget } from '@/components/widgets/PinnedSitesWidget'
 import { TodoWidget } from '@/components/widgets/TodoWidget'
 import { WeatherWidget } from '@/components/widgets/WeatherWidget'
+import { MinigameWidget } from '@/components/widgets/MinigameWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { useWallpaperUrl } from '@/hooks/useWallpaperUrl'
 import { useSettingsStore } from '@/store/settings'
@@ -51,6 +52,7 @@ export default function App() {
             { id: 'weather', node: <WeatherWidget /> },
             { id: 'pinned', node: <PinnedSitesWidget /> },
             { id: 'todo', node: <TodoWidget /> },
+            { id: 'minigame', node: <MinigameWidget /> },
           ]}
         />
       </main>

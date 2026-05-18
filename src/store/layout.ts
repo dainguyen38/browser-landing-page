@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-export type WidgetId = 'clock' | 'pinned' | 'todo' | 'weather'
+export type WidgetId = 'clock' | 'pinned' | 'todo' | 'weather' | 'minigame'
 
 export type GridItem = {
   i: WidgetId
@@ -29,10 +29,11 @@ export const DEFAULT_LAYOUT: GridItem[] = [
   { i: 'clock', x: 0, y: 0, w: 8, h: 5, minW: 2, minH: 2 },
   { i: 'weather', x: 8, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
   { i: 'pinned', x: 0, y: 5, w: 12, h: 5, minW: 2, minH: 2 },
-  { i: 'todo', x: 0, y: 10, w: 12, h: 10, minW: 2, minH: 3 },
+  { i: 'todo', x: 0, y: 10, w: 7, h: 10, minW: 2, minH: 3 },
+  { i: 'minigame', x: 7, y: 10, w: 5, h: 14, minW: 3, minH: 6 },
 ]
 
-const DEFAULT_IDS: WidgetId[] = ['clock', 'pinned', 'todo', 'weather']
+const DEFAULT_IDS: WidgetId[] = ['clock', 'pinned', 'todo', 'weather', 'minigame']
 
 export const useLayoutStore = create<State & Actions>()(
   persist(
