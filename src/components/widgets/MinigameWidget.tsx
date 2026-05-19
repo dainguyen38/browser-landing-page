@@ -12,8 +12,16 @@ import { FlappyBird } from '@/components/minigames/FlappyBird'
 import { Tetris } from '@/components/minigames/Tetris'
 import { Sudoku } from '@/components/minigames/Sudoku'
 import { GoldMiner } from '@/components/minigames/GoldMiner'
+import { DinoGame } from '@/components/minigames/DinoGame'
 import { type GameKey } from '@/store/minigame'
 import { useT } from '@/i18n/useT'
+
+// pixel-style T-Rex icon
+const DinoIcon: LucideIcon = (({ className, ...props }: React.SVGAttributes<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
+    <path d="M14 3h4v2h2v2h1v3h-1v2h-2v3h-2v3h-2v-3H10v-1H8v-2H6v-1h2v-1H7v-2h1V8h2V6h4V3zm1 4h1v1h-1V7z" />
+  </svg>
+)) as unknown as LucideIcon
 
 type GameDef = {
   key: GameKey
@@ -60,6 +68,13 @@ const GAMES: GameDef[] = [
     gradient: 'from-yellow-500/30 to-amber-700/20',
     color: 'text-yellow-200',
     Component: GoldMiner,
+  },
+  {
+    key: 'dino',
+    icon: DinoIcon,
+    gradient: 'from-slate-500/30 to-zinc-700/20',
+    color: 'text-slate-200',
+    Component: DinoGame,
   },
 ]
 

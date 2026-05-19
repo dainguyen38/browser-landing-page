@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Languages, Clock as ClockIcon, Pin as PinIcon, CheckSquare, Eye, EyeOff, AlertTriangle, ThermometerSun, Maximize2, Gamepad2 } from 'lucide-react'
+import { Languages, AlertTriangle, Maximize2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,21 +15,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WallpaperPicker } from './WallpaperPicker'
 import { useSettingsStore, type ContentWidth } from '@/store/settings'
-import { useLayoutStore, type WidgetId } from '@/store/layout'
 import { useT } from '@/i18n/useT'
 import { cn } from '@/lib/utils'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-const WIDGET_ICONS: Record<WidgetId, React.ElementType> = {
-  clock: ClockIcon,
-  pinned: PinIcon,
-  todo: CheckSquare,
-  weather: ThermometerSun,
-  minigame: Gamepad2,
 }
 
 export function SettingsDialog({ open, onOpenChange }: Props) {
@@ -42,8 +33,6 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const setGreetingName = useSettingsStore((s) => s.setGreetingName)
   const contentWidth = useSettingsStore((s) => s.contentWidth)
   const setContentWidth = useSettingsStore((s) => s.setContentWidth)
-  const hidden = useLayoutStore((s) => s.hidden)
-  const toggleHidden = useLayoutStore((s) => s.toggleHidden)
 
   const [confirmReset, setConfirmReset] = useState(false)
 
@@ -54,8 +43,6 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     localStorage.clear()
     location.reload()
   }
-
-  const widgetKeys: WidgetId[] = ['clock', 'pinned', 'todo', 'weather', 'minigame']
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,9 +57,6 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
             <TabsTrigger value="wallpaper" className="flex-1">
               {t('settings.wallpaper')}
             </TabsTrigger>
-            <TabsTrigger value="widgets" className="flex-1">
-              {t('settings.widgets')}
-            </TabsTrigger>
             <TabsTrigger value="general" className="flex-1">
               {t('common.settings')}
             </TabsTrigger>
@@ -80,36 +64,6 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
 
           <TabsContent value="wallpaper" className="max-h-[60vh] overflow-y-auto pr-1">
             <WallpaperPicker />
-          </TabsContent>
-
-          <TabsContent value="widgets" className="space-y-4">
-            <p className="text-xs text-white/60">{t('settings.layoutHint')}</p>
-            <div className="space-y-2">
-              {widgetKeys.map((id) => {
-                const Icon = WIDGET_ICONS[id]
-                const isHidden = hidden.includes(id)
-                return (
-                  <div
-                    key={id}
-                    className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-white/80" />
-                      <span className="text-sm">{t(`settings.${id}`)}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleHidden(id)}
-                      className={cn('gap-1.5', isHidden && 'text-white/50')}
-                    >
-                      {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      {isHidden ? t('common.add') : t('common.delete')}
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
           </TabsContent>
 
           <TabsContent value="general" className="space-y-4">

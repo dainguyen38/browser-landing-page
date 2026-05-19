@@ -7,7 +7,9 @@ import { PinnedSitesWidget } from '@/components/widgets/PinnedSitesWidget'
 import { TodoWidget } from '@/components/widgets/TodoWidget'
 import { WeatherWidget } from '@/components/widgets/WeatherWidget'
 import { MinigameWidget } from '@/components/widgets/MinigameWidget'
+import { CalculatorWidget } from '@/components/widgets/CalculatorWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
+import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { useWallpaperUrl } from '@/hooks/useWallpaperUrl'
 import { useSettingsStore } from '@/store/settings'
 
@@ -34,7 +36,8 @@ export default function App() {
         className="relative mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10"
         style={maxWidthStyle}
       >
-        <header className="flex items-center justify-end mb-6">
+        <header className="flex items-center justify-end gap-2 mb-6">
+          <WidgetVisibilityPopover />
           <Button
             variant="secondary"
             size="icon"
@@ -53,6 +56,7 @@ export default function App() {
             { id: 'pinned', node: <PinnedSitesWidget /> },
             { id: 'todo', node: <TodoWidget /> },
             { id: 'minigame', node: <MinigameWidget /> },
+            { id: 'calculator', node: <CalculatorWidget /> },
           ]}
         />
       </main>

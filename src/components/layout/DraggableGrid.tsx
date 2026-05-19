@@ -55,7 +55,7 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
       resizeHandles={['se']}
       onLayoutChange={handleChange}
       compactType="vertical"
-      preventCollision={false}
+      preventCollision={true}
     >
       {visibleIds.map((id) => (
         <div key={id} className="group/widget relative">
