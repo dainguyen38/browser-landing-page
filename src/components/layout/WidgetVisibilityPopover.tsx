@@ -6,6 +6,10 @@ import {
   ThermometerSun,
   Gamepad2,
   Calculator as CalcIcon,
+  Coins,
+  Moon,
+  Palette,
+  ArrowRightLeft,
   LayoutGrid,
   Search,
   Eye,
@@ -25,9 +29,24 @@ const ICONS: Record<WidgetId, LucideIcon> = {
   weather: ThermometerSun,
   minigame: Gamepad2,
   calculator: CalcIcon,
+  gold: Coins,
+  lunar: Moon,
+  colorpicker: Palette,
+  currency: ArrowRightLeft,
 }
 
-const ALL_WIDGETS: WidgetId[] = ['clock', 'pinned', 'todo', 'weather', 'minigame', 'calculator']
+const ALL_WIDGETS: WidgetId[] = [
+  'clock',
+  'pinned',
+  'todo',
+  'weather',
+  'minigame',
+  'calculator',
+  'gold',
+  'lunar',
+  'colorpicker',
+  'currency',
+]
 
 export function WidgetVisibilityPopover() {
   const { t } = useT()

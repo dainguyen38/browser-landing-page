@@ -8,6 +8,10 @@ import { TodoWidget } from '@/components/widgets/TodoWidget'
 import { WeatherWidget } from '@/components/widgets/WeatherWidget'
 import { MinigameWidget } from '@/components/widgets/MinigameWidget'
 import { CalculatorWidget } from '@/components/widgets/CalculatorWidget'
+import { GoldPriceWidget } from '@/components/widgets/GoldPriceWidget'
+import { LunarCalendarWidget } from '@/components/widgets/LunarCalendarWidget'
+import { ColorPickerWidget } from '@/components/widgets/ColorPickerWidget'
+import { CurrencyConverterWidget } from '@/components/widgets/CurrencyConverterWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { useWallpaperUrl } from '@/hooks/useWallpaperUrl'
@@ -53,10 +57,14 @@ export default function App() {
           widgets={[
             { id: 'clock', node: <ClockWidget /> },
             { id: 'weather', node: <WeatherWidget /> },
+            { id: 'gold', node: <GoldPriceWidget /> },
+            { id: 'currency', node: <CurrencyConverterWidget /> },
+            { id: 'lunar', node: <LunarCalendarWidget /> },
             { id: 'pinned', node: <PinnedSitesWidget /> },
             { id: 'todo', node: <TodoWidget /> },
             { id: 'minigame', node: <MinigameWidget /> },
             { id: 'calculator', node: <CalculatorWidget /> },
+            { id: 'colorpicker', node: <ColorPickerWidget /> },
           ]}
         />
       </main>
