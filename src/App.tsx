@@ -14,25 +14,40 @@ import { ColorPickerWidget } from '@/components/widgets/ColorPickerWidget'
 import { CurrencyConverterWidget } from '@/components/widgets/CurrencyConverterWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
+import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
+import { LanguageToggle } from '@/components/layout/LanguageToggle'
+import { AnimatedWallpaper } from '@/components/wallpapers/AnimatedWallpaper'
 import { useWallpaperUrl } from '@/hooks/useWallpaperUrl'
 import { useSettingsStore } from '@/store/settings'
+import { getAnimatedDef, isAnimatedWallpaperId } from '@/lib/wallpapers'
 
 export default function App() {
   const wallpaper = useWallpaperUrl()
+  const wallpaperId = useSettingsStore((s) => s.wallpaperId)
   const contentWidth = useSettingsStore((s) => s.contentWidth)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  const animatedDef = isAnimatedWallpaperId(wallpaperId) ? getAnimatedDef(wallpaperId) : null
+
   useEffect(() => {
+    if (animatedDef) {
+      // animated wallpaper is rendered by <AnimatedWallpaper /> below
+      document.body.style.backgroundImage = 'none'
+      document.body.style.backgroundColor = '#0a0a0f'
+      return
+    }
     if (wallpaper) {
       document.body.style.backgroundImage = `url("${wallpaper}")`
+      document.body.style.backgroundColor = ''
     }
-  }, [wallpaper])
+  }, [wallpaper, animatedDef])
 
   const maxWidthStyle: React.CSSProperties =
     contentWidth === 'full' ? { maxWidth: 'none' } : { maxWidth: `${contentWidth}px` }
 
   return (
     <div className="min-h-full">
+      {animatedDef && <AnimatedWallpaper variant={animatedDef.variant} />}
       {/* Subtle overlay for legibility on bright wallpapers */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
 
@@ -40,17 +55,21 @@ export default function App() {
         className="relative mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10"
         style={maxWidthStyle}
       >
-        <header className="flex items-center justify-end gap-2 mb-6">
-          <WidgetVisibilityPopover />
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            className="backdrop-blur-xl"
-          >
-            <SettingsIcon className="h-4 w-4" />
-          </Button>
+        <header className="flex items-center gap-3 mb-6">
+          <QuickSearchBar />
+          <div className="flex items-center gap-2 shrink-0">
+            <LanguageToggle />
+            <WidgetVisibilityPopover />
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              className="backdrop-blur-xl"
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </header>
 
         <DraggableGrid

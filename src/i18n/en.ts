@@ -61,6 +61,17 @@ const en = {
   calculator: {
     title: 'Calculator',
   },
+  language: {
+    switch: 'Switch language',
+  },
+  quickSearch: {
+    placeholder: 'Search or type a URL — just start typing',
+    clear: 'Clear',
+    engine: 'Search engine',
+    via: 'via',
+    navigate: 'navigate',
+    open: 'open',
+  },
   fx: {
     title: 'Currency converter',
     refresh: 'Refresh rates',
@@ -180,6 +191,7 @@ const en = {
     wallpaper: 'Wallpaper',
     wallpaperUpload: 'Upload your own',
     wallpaperBundled: 'Built-in',
+    wallpaperAnimated: 'Animated',
     wallpaperCustom: 'Yours',
     widgets: 'Widgets',
     layout: 'Layout',

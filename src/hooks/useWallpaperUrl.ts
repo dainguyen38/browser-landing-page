@@ -1,16 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useSettingsStore } from '@/store/settings'
-import { BUNDLED_WALLPAPERS, getBundled, loadCustomWallpaper } from '@/lib/wallpapers'
+import {
+  BUNDLED_WALLPAPERS,
+  getBundled,
+  isAnimatedWallpaperId,
+  loadCustomWallpaper,
+} from '@/lib/wallpapers'
 
 export function useWallpaperUrl(): string | null {
   const wallpaperId = useSettingsStore((s) => s.wallpaperId)
-  const [url, setUrl] = useState<string | null>(() => getBundled(wallpaperId)?.url ?? null)
+  const [url, setUrl] = useState<string | null>(() =>
+    isAnimatedWallpaperId(wallpaperId) ? null : getBundled(wallpaperId)?.url ?? null,
+  )
 
   useEffect(() => {
     let revoke: string | null = null
     let cancelled = false
 
     async function resolve() {
+      if (isAnimatedWallpaperId(wallpaperId)) {
+        setUrl(null)
+        return
+      }
       if (wallpaperId.startsWith('bundled:')) {
         const bundled = getBundled(wallpaperId)
         setUrl(bundled?.url ?? BUNDLED_WALLPAPERS[0]?.url ?? null)

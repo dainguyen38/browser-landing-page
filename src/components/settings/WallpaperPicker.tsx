@@ -3,6 +3,7 @@ import { Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSettingsStore } from '@/store/settings'
 import {
+  ANIMATED_WALLPAPERS,
   BUNDLED_WALLPAPERS,
   deleteCustomWallpaper,
   loadCustomWallpaper,
@@ -12,7 +13,7 @@ import { uid } from '@/lib/utils'
 import { useT } from '@/i18n/useT'
 import { cn } from '@/lib/utils'
 
-type Thumb = { id: string; url: string; label: string; custom: boolean }
+type Thumb = { id: string; url?: string; preview?: string; label: string; custom: boolean }
 
 export function WallpaperPicker() {
   const { t } = useT()
@@ -48,6 +49,17 @@ export function WallpaperPicker() {
 
   const bundledThumbs: Thumb[] = useMemo(
     () => BUNDLED_WALLPAPERS.map((w) => ({ id: w.id, url: w.url, label: w.label, custom: false })),
+    [],
+  )
+
+  const animatedThumbs: Thumb[] = useMemo(
+    () =>
+      ANIMATED_WALLPAPERS.map((w) => ({
+        id: w.id,
+        preview: w.preview,
+        label: w.label,
+        custom: false,
+      })),
     [],
   )
 
@@ -101,6 +113,12 @@ export function WallpaperPicker() {
 
       <Gallery thumbs={bundledThumbs} active={wallpaperId} onSelect={setWallpaperId} />
 
+      <h3 className="text-sm font-medium text-white pt-2 flex items-center gap-1.5">
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        {t('settings.wallpaperAnimated')}
+      </h3>
+      <Gallery thumbs={animatedThumbs} active={wallpaperId} onSelect={setWallpaperId} />
+
       {customThumbs.length > 0 && (
         <>
           <h3 className="text-sm font-medium text-white pt-2">{t('settings.wallpaperCustom')}</h3>
@@ -135,12 +153,22 @@ function Gallery({
             type="button"
             onClick={() => onSelect(thumb.id)}
             className={cn(
-              'block w-full aspect-video rounded-lg overflow-hidden border-2 transition-all',
+              'block w-full aspect-video rounded-lg overflow-hidden border-2 transition-all relative',
               active === thumb.id ? 'border-primary ring-2 ring-primary/40' : 'border-white/15 hover:border-white/40',
             )}
             title={thumb.label}
           >
-            <img src={thumb.url} alt={thumb.label} className="h-full w-full object-cover" />
+            {thumb.url ? (
+              <img src={thumb.url} alt={thumb.label} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full" style={{ background: thumb.preview }} />
+            )}
+            {thumb.id.startsWith('animated:') && (
+              <span className="absolute top-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/55 text-[9px] font-semibold uppercase tracking-wider text-white">
+                <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
+                live
+              </span>
+            )}
           </button>
           {onRemove && (
             <button

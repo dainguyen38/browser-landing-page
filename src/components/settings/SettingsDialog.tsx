@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Languages, AlertTriangle, Maximize2 } from 'lucide-react'
+import { AlertTriangle, Maximize2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -25,8 +25,6 @@ interface Props {
 
 export function SettingsDialog({ open, onOpenChange }: Props) {
   const { t } = useT()
-  const locale = useSettingsStore((s) => s.locale)
-  const setLocale = useSettingsStore((s) => s.setLocale)
   const hour24 = useSettingsStore((s) => s.hour24)
   const setHour24 = useSettingsStore((s) => s.setHour24)
   const greetingName = useSettingsStore((s) => s.greetingName)
@@ -67,26 +65,6 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           </TabsContent>
 
           <TabsContent value="general" className="space-y-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Languages className="h-4 w-4" /> {t('settings.language')}
-              </Label>
-              <div className="inline-flex rounded-md border border-white/15 overflow-hidden">
-                <button
-                  className={cn('px-3 py-1.5 text-sm', locale === 'en' ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10')}
-                  onClick={() => setLocale('en')}
-                >
-                  English
-                </button>
-                <button
-                  className={cn('px-3 py-1.5 text-sm', locale === 'vi' ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10')}
-                  onClick={() => setLocale('vi')}
-                >
-                  Tiếng Việt
-                </button>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="greeting-name">{t('settings.name')}</Label>
               <Input

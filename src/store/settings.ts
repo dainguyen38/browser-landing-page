@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { DEFAULT_ENGINE, type SearchEngineId } from '@/lib/search'
 
 export type CustomWallpaperMeta = { id: string; name: string }
 
@@ -21,6 +22,7 @@ type State = {
   weatherLocation: WeatherLocation
   weatherUnit: 'celsius' | 'fahrenheit'
   contentWidth: ContentWidth
+  searchEngine: SearchEngineId
 }
 
 type Actions = {
@@ -33,6 +35,7 @@ type Actions = {
   setWeatherLocation: (loc: WeatherLocation) => void
   setWeatherUnit: (u: 'celsius' | 'fahrenheit') => void
   setContentWidth: (w: ContentWidth) => void
+  setSearchEngine: (e: SearchEngineId) => void
 }
 
 const defaultLocale = (): 'vi' | 'en' => {
@@ -53,6 +56,7 @@ export const useSettingsStore = create<State & Actions>()(
         : { name: 'New York', latitude: 40.7128, longitude: -74.006, country: 'US' },
       weatherUnit: 'celsius',
       contentWidth: 'full',
+      searchEngine: DEFAULT_ENGINE,
       setWallpaperId: (id) => set({ wallpaperId: id }),
       addCustomWallpaper: (meta) =>
         set((state) => ({ customWallpapers: [...state.customWallpapers, meta] })),
@@ -64,6 +68,7 @@ export const useSettingsStore = create<State & Actions>()(
       setWeatherLocation: (weatherLocation) => set({ weatherLocation }),
       setWeatherUnit: (weatherUnit) => set({ weatherUnit }),
       setContentWidth: (contentWidth) => set({ contentWidth }),
+      setSearchEngine: (searchEngine) => set({ searchEngine }),
     }),
     {
       name: 'landing.settings.v1',

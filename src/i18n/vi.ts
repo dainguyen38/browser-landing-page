@@ -61,6 +61,17 @@ const vi: Dict = {
   calculator: {
     title: 'Máy tính',
   },
+  language: {
+    switch: 'Đổi ngôn ngữ',
+  },
+  quickSearch: {
+    placeholder: 'Tìm kiếm hoặc nhập URL — gõ phím để bắt đầu',
+    clear: 'Xoá',
+    engine: 'Công cụ tìm kiếm',
+    via: 'qua',
+    navigate: 'chọn',
+    open: 'mở',
+  },
   fx: {
     title: 'Chuyển đổi tiền tệ',
     refresh: 'Tải lại tỷ giá',
@@ -180,6 +191,7 @@ const vi: Dict = {
     wallpaper: 'Hình nền',
     wallpaperUpload: 'Tải ảnh từ máy',
     wallpaperBundled: 'Có sẵn',
+    wallpaperAnimated: 'Hình động',
     wallpaperCustom: 'Của bạn',
     widgets: 'Widget',
     layout: 'Bố cục',

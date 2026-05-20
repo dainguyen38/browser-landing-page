@@ -33,14 +33,38 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
     .filter((x): x is GridItem => !!x)
 
   const handleChange = (next: Layout[]) => {
-    // Merge into stored layout: keep hidden widgets' coords intact, update visible ones
+    // Merge into stored layout: keep hidden widgets' coords intact, update visible ones.
+    // For widgets that don't have a stored entry yet (e.g. newly added since last visit),
+    // capture their current position so they don't keep falling back to defaults.
     const map = new Map(layout.map((l) => [l.i, l]))
+    let changed = false
     for (const item of next) {
-      const prev = map.get(item.i as WidgetId)
-      if (!prev) continue
-      map.set(item.i as WidgetId, { ...prev, x: item.x, y: item.y, w: item.w, h: item.h })
+      const id = item.i as WidgetId
+      const prev = map.get(id)
+      if (prev) {
+        if (prev.x === item.x && prev.y === item.y && prev.w === item.w && prev.h === item.h) {
+          continue
+        }
+        map.set(id, { ...prev, x: item.x, y: item.y, w: item.w, h: item.h })
+        changed = true
+      } else {
+        const def = DEFAULT_LAYOUT.find((d) => d.i === id)
+        if (!def) continue
+        map.set(id, {
+          i: id,
+          x: item.x,
+          y: item.y,
+          w: item.w,
+          h: item.h,
+          minW: def.minW,
+          minH: def.minH,
+          maxW: def.maxW,
+          maxH: def.maxH,
+        })
+        changed = true
+      }
     }
-    setLayout(Array.from(map.values()))
+    if (changed) setLayout(Array.from(map.values()))
   }
 
   return (
@@ -54,8 +78,9 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
       draggableHandle=".drag-handle"
       resizeHandles={['se']}
       onLayoutChange={handleChange}
-      compactType="vertical"
+      compactType={null}
       preventCollision={true}
+      allowOverlap={false}
     >
       {visibleIds.map((id) => (
         <div key={id} className="group/widget relative">
