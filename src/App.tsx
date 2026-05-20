@@ -12,6 +12,9 @@ import { GoldPriceWidget } from '@/components/widgets/GoldPriceWidget'
 import { LunarCalendarWidget } from '@/components/widgets/LunarCalendarWidget'
 import { ColorPickerWidget } from '@/components/widgets/ColorPickerWidget'
 import { CurrencyConverterWidget } from '@/components/widgets/CurrencyConverterWidget'
+import { NotesWidget } from '@/components/widgets/NotesWidget'
+import { DrawingWidget } from '@/components/widgets/DrawingWidget'
+import { TreeWidget } from '@/components/widgets/TreeWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
@@ -84,6 +87,9 @@ export default function App() {
             { id: 'minigame', node: <MinigameWidget /> },
             { id: 'calculator', node: <CalculatorWidget /> },
             { id: 'colorpicker', node: <ColorPickerWidget /> },
+            { id: 'notes', node: <NotesWidget /> },
+            { id: 'drawing', node: <DrawingWidget /> },
+            { id: 'tree', node: <TreeWidget /> },
           ]}
         />
       </main>

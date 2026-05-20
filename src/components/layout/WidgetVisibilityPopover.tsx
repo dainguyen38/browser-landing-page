@@ -10,6 +10,9 @@ import {
   Moon,
   Palette,
   ArrowRightLeft,
+  StickyNote,
+  Brush,
+  Sprout,
   LayoutGrid,
   Search,
   Eye,
@@ -33,6 +36,9 @@ const ICONS: Record<WidgetId, LucideIcon> = {
   lunar: Moon,
   colorpicker: Palette,
   currency: ArrowRightLeft,
+  notes: StickyNote,
+  drawing: Brush,
+  tree: Sprout,
 }
 
 const ALL_WIDGETS: WidgetId[] = [
@@ -46,6 +52,9 @@ const ALL_WIDGETS: WidgetId[] = [
   'lunar',
   'colorpicker',
   'currency',
+  'notes',
+  'drawing',
+  'tree',
 ]
 
 export function WidgetVisibilityPopover() {

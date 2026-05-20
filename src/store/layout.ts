@@ -12,6 +12,9 @@ export type WidgetId =
   | 'lunar'
   | 'colorpicker'
   | 'currency'
+  | 'notes'
+  | 'drawing'
+  | 'tree'
 
 export type GridItem = {
   i: WidgetId
@@ -47,6 +50,9 @@ export const DEFAULT_LAYOUT: GridItem[] = [
   { i: 'minigame', x: 7, y: 15, w: 5, h: 8, minW: 3, minH: 4, maxW: 12 },
   { i: 'calculator', x: 0, y: 25, w: 5, h: 11, minW: 3, minH: 8, maxW: 12 },
   { i: 'colorpicker', x: 5, y: 25, w: 7, h: 11, minW: 3, minH: 6, maxW: 12 },
+  { i: 'notes', x: 0, y: 36, w: 5, h: 10, minW: 3, minH: 5, maxW: 12 },
+  { i: 'tree', x: 5, y: 36, w: 4, h: 12, minW: 3, minH: 8, maxW: 12 },
+  { i: 'drawing', x: 9, y: 36, w: 3, h: 12, minW: 3, minH: 7, maxW: 12 },
 ]
 
 const DEFAULT_IDS: WidgetId[] = [
@@ -60,6 +66,9 @@ const DEFAULT_IDS: WidgetId[] = [
   'lunar',
   'colorpicker',
   'currency',
+  'notes',
+  'drawing',
+  'tree',
 ]
 
 export const useLayoutStore = create<State & Actions>()(

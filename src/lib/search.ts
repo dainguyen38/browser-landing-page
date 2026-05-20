@@ -162,7 +162,10 @@ export function getEngine(id: string | undefined): SearchEngine {
   return ENGINES.find((e) => e.id === id) ?? ENGINES[0]
 }
 
-const PROXY = 'https://corsproxy.io/?'
+// Suggestions are fetched via our same-origin /api/suggest endpoint, which is
+// served by a Cloudflare Worker in production and by a Vite middleware in dev.
+// The server bypasses the upstream-CORS problem (and 3rd-party proxies that
+// went flaky after deploy).
 
 export async function fetchSuggestions(
   engineId: SearchEngineId,
@@ -171,15 +174,16 @@ export async function fetchSuggestions(
 ): Promise<string[]> {
   const q = query.trim()
   if (!q) return []
-  const engine = getEngine(engineId)
-  if (!engine.suggestUrl || !engine.parseSuggestions) return []
-  const target = engine.suggestUrl(q)
-  const url = `${PROXY}${encodeURIComponent(target)}`
   try {
-    const res = await fetch(url, { signal })
+    const res = await fetch(
+      `/api/suggest?engine=${encodeURIComponent(engineId)}&q=${encodeURIComponent(q)}`,
+      { signal },
+    )
     if (!res.ok) return []
-    const data = await res.json()
-    return engine.parseSuggestions(data).slice(0, 8)
+    const data = (await res.json()) as unknown
+    return Array.isArray(data)
+      ? data.filter((x): x is string => typeof x === 'string').slice(0, 8)
+      : []
   } catch {
     return []
   }
