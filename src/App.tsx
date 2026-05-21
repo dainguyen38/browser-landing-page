@@ -15,6 +15,7 @@ import { CurrencyConverterWidget } from '@/components/widgets/CurrencyConverterW
 import { NotesWidget } from '@/components/widgets/NotesWidget'
 import { DrawingWidget } from '@/components/widgets/DrawingWidget'
 import { TreeWidget } from '@/components/widgets/TreeWidget'
+import { EnglishWidget } from '@/components/widgets/EnglishWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
@@ -90,6 +91,7 @@ export default function App() {
             { id: 'notes', node: <NotesWidget /> },
             { id: 'drawing', node: <DrawingWidget /> },
             { id: 'tree', node: <TreeWidget /> },
+            { id: 'english', node: <EnglishWidget /> },
           ]}
         />
       </main>

@@ -15,6 +15,7 @@ export type WidgetId =
   | 'notes'
   | 'drawing'
   | 'tree'
+  | 'english'
 
 export type GridItem = {
   i: WidgetId
@@ -31,12 +32,15 @@ export type GridItem = {
 type State = {
   layout: GridItem[]
   hidden: WidgetId[]
+  /** widget ids in pin order — these always appear at the top of the popover */
+  pinned: WidgetId[]
 }
 
 type Actions = {
   setLayout: (next: GridItem[]) => void
   toggleHidden: (id: WidgetId) => void
   setHidden: (next: WidgetId[]) => void
+  togglePin: (id: WidgetId) => void
 }
 
 export const DEFAULT_LAYOUT: GridItem[] = [
@@ -53,6 +57,7 @@ export const DEFAULT_LAYOUT: GridItem[] = [
   { i: 'notes', x: 0, y: 36, w: 5, h: 10, minW: 3, minH: 5, maxW: 12 },
   { i: 'tree', x: 5, y: 36, w: 4, h: 12, minW: 3, minH: 8, maxW: 12 },
   { i: 'drawing', x: 9, y: 36, w: 3, h: 12, minW: 3, minH: 7, maxW: 12 },
+  { i: 'english', x: 0, y: 48, w: 12, h: 12, minW: 4, minH: 8, maxW: 12 },
 ]
 
 const DEFAULT_IDS: WidgetId[] = [
@@ -69,6 +74,7 @@ const DEFAULT_IDS: WidgetId[] = [
   'notes',
   'drawing',
   'tree',
+  'english',
 ]
 
 export const useLayoutStore = create<State & Actions>()(
@@ -76,6 +82,7 @@ export const useLayoutStore = create<State & Actions>()(
     (set) => ({
       layout: DEFAULT_LAYOUT,
       hidden: [],
+      pinned: [],
       setLayout: (next) => set({ layout: next }),
       toggleHidden: (id) =>
         set((state) => ({
@@ -84,6 +91,12 @@ export const useLayoutStore = create<State & Actions>()(
             : [...state.hidden, id],
         })),
       setHidden: (next) => set({ hidden: next }),
+      togglePin: (id) =>
+        set((state) => ({
+          pinned: state.pinned.includes(id)
+            ? state.pinned.filter((x) => x !== id)
+            : [...state.pinned, id],
+        })),
     }),
     {
       name: 'landing.layout.v2',
@@ -106,7 +119,12 @@ export const useLayoutStore = create<State & Actions>()(
             if (fallback) layout.push(fallback)
           }
         }
-        return { ...persisted, layout, hidden: persisted?.hidden ?? [] }
+        return {
+          ...persisted,
+          layout,
+          hidden: persisted?.hidden ?? [],
+          pinned: persisted?.pinned ?? [],
+        }
       },
     },
   ),

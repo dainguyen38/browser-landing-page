@@ -78,8 +78,8 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
       draggableHandle=".drag-handle"
       resizeHandles={['se']}
       onLayoutChange={handleChange}
-      compactType={null}
-      preventCollision={true}
+      compactType="vertical"
+      preventCollision={false}
       allowOverlap={false}
     >
       {visibleIds.map((id) => (
