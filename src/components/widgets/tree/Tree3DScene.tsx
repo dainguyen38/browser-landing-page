@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 interface Props {
   /** 0..1 — overall tree maturity */
@@ -65,7 +66,7 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
     const h0 = Math.max(1, container.clientHeight)
 
     const scene = new THREE.Scene()
-    scene.fog = new THREE.Fog(0x0a0a18, 9, 20)
+    scene.fog = new THREE.Fog(0x0a0a18, 12, 36)
 
     const camera = new THREE.PerspectiveCamera(35, w0 / h0, 0.1, 100)
     camera.position.set(0, 2.6, 6.8)
@@ -79,7 +80,38 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
     renderer.toneMappingExposure = 1.05
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.domElement.style.cursor = 'grab'
+    renderer.domElement.style.touchAction = 'none'
     container.appendChild(renderer.domElement)
+
+    // === Orbit controls — drag to rotate the tree freely ===
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.target.set(0, 1.5, 0)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.09
+    controls.enablePan = false
+    controls.enableZoom = true
+    controls.zoomSpeed = 0.8
+    controls.minDistance = 3.4 // closest the camera may dolly in
+    controls.maxDistance = 15 // farthest zoom-out, keeps tree in frame
+    controls.rotateSpeed = 0.85
+    controls.minPolarAngle = 0.15
+    controls.maxPolarAngle = Math.PI * 0.52 // keep camera above the ground
+    controls.autoRotate = true
+    controls.autoRotateSpeed = 0.7
+    let resumeTimer = 0
+    controls.addEventListener('start', () => {
+      controls.autoRotate = false
+      window.clearTimeout(resumeTimer)
+      renderer.domElement.style.cursor = 'grabbing'
+    })
+    controls.addEventListener('end', () => {
+      renderer.domElement.style.cursor = 'grab'
+      window.clearTimeout(resumeTimer)
+      resumeTimer = window.setTimeout(() => {
+        controls.autoRotate = true
+      }, 3500)
+    })
 
     // === Lighting ===
     const hemi = new THREE.HemisphereLight(0x87ceeb, 0x4a6741, 0.7)
@@ -102,7 +134,7 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
 
     // === Ground disc + soft shadow plate ===
     const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(3.5, 48),
+      new THREE.CircleGeometry(6, 64),
       new THREE.MeshStandardMaterial({ color: 0x4d7c2f, roughness: 0.95 }),
     )
     ground.rotation.x = -Math.PI / 2
@@ -127,9 +159,9 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
       roughness: 0.9,
     })
     const tuftRng = seededRng(7)
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 46; i++) {
       const angle = tuftRng() * Math.PI * 2
-      const r = 0.9 + tuftRng() * 1.4
+      const r = 0.9 + tuftRng() * 4.4
       const h = 0.08 + tuftRng() * 0.12
       const tuft = new THREE.Mesh(
         new THREE.ConeGeometry(0.05 + tuftRng() * 0.03, h, 4),
@@ -143,50 +175,62 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
     }
     scene.add(grassTufts)
 
-    // === Pot (carved lathe shape for organic look) ===
+    // === Pot — solid terracotta planter (closed geometry, no see-through) ===
     const potHeight = 0.6
-    const potPoints: THREE.Vector2[] = []
-    const potProfile = [
-      [0.0, 0.0, 0.36],
-      [0.0, 0.12, 0.5],
-      [0.0, 0.45, 0.62],
-      [0.0, 0.55, 0.66],
-      [0.0, 0.6, 0.62],
-    ]
-    for (const [, y, r] of potProfile) {
-      potPoints.push(new THREE.Vector2(r, y * potHeight))
-    }
-    const potGeom = new THREE.LatheGeometry(potPoints, 32)
     const potMat = new THREE.MeshStandardMaterial({
       color: 0xb45309,
-      roughness: 0.8,
-      metalness: 0.05,
-      flatShading: false,
+      roughness: 0.82,
+      metalness: 0.04,
     })
-    const pot = new THREE.Mesh(potGeom, potMat)
-    pot.castShadow = true
-    pot.receiveShadow = true
-    scene.add(pot)
-    // Inner rim shadow
-    const innerShadow = new THREE.Mesh(
-      new THREE.RingGeometry(0.48, 0.62, 32),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }),
+    const potGroup = new THREE.Group()
+    // tapered body (closed caps)
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.56, 0.42, potHeight, 36),
+      potMat,
     )
-    innerShadow.rotation.x = -Math.PI / 2
-    innerShadow.position.y = potHeight - 0.02
-    scene.add(innerShadow)
-    // Soil top
+    body.position.y = potHeight / 2
+    body.castShadow = true
+    body.receiveShadow = true
+    potGroup.add(body)
+    // top lip / rim band, slightly wider
+    const rim = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.62, 0.575, 0.13, 36),
+      potMat,
+    )
+    rim.position.y = potHeight - 0.05
+    rim.castShadow = true
+    potGroup.add(rim)
+    // subtle highlight stripe on the rim
+    const rimHi = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.625, 0.625, 0.03, 36, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7, side: THREE.DoubleSide }),
+    )
+    rimHi.position.y = potHeight - 0.005
+    potGroup.add(rimHi)
+    // soil disc sitting just inside the rim
     const soil = new THREE.Mesh(
-      new THREE.CircleGeometry(0.55, 32),
+      new THREE.CircleGeometry(0.55, 36),
       new THREE.MeshStandardMaterial({ color: 0x3a2410, roughness: 1 }),
     )
     soil.rotation.x = -Math.PI / 2
-    soil.position.y = potHeight - 0.01
-    scene.add(soil)
+    soil.position.y = potHeight + 0.005
+    soil.receiveShadow = true
+    potGroup.add(soil)
+    // little soil mound bumps for texture
+    const moundMat = new THREE.MeshStandardMaterial({ color: 0x4a2f17, roughness: 1, flatShading: true })
+    const moundRng = seededRng(99)
+    for (let i = 0; i < 6; i++) {
+      const a = moundRng() * Math.PI * 2
+      const rr = moundRng() * 0.38
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05 + moundRng() * 0.04, 0), moundMat)
+      m.position.set(Math.cos(a) * rr, potHeight + 0.01, Math.sin(a) * rr)
+      potGroup.add(m)
+    }
+    scene.add(potGroup)
 
     // === Tree anchor groups ===
     const treeGroup = new THREE.Group()
-    treeGroup.position.y = potHeight - 0.02
+    treeGroup.position.y = potHeight + 0.01
     scene.add(treeGroup)
 
     const branchHub = new THREE.Group() // contains trunk + branches; child of treeGroup
@@ -280,11 +324,8 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
         }
       }
 
-      // Slow camera orbit
-      const camA = elapsed * 0.07
-      camera.position.x = Math.sin(camA) * 0.6
-      camera.position.z = 6.8 + Math.cos(camA) * 0.25
-      camera.lookAt(0, 1.5, 0)
+      // Orbit controls (drag-rotate + gentle idle auto-rotate, damped)
+      controls.update()
 
       renderer.render(scene, camera)
     }
@@ -320,6 +361,8 @@ export function Tree3DScene({ growth, isDay, choppingAt }: Props) {
       cleanup: () => {
         cancelAnimationFrame(raf)
         ro.disconnect()
+        window.clearTimeout(resumeTimer)
+        controls.dispose()
         try {
           container.removeChild(renderer.domElement)
         } catch {
@@ -638,25 +681,82 @@ function addFoliageCluster(
     clusterGroup.add(blob)
   }
 
-  // Fruits / blossoms on mature trees
-  if (g > 0.65 && rng() < 0.7) {
-    const fruitColor = AUTUMN_PALETTE[Math.floor(rng() * AUTUMN_PALETTE.length)]
+  // ===== BLOSSOMS — bloom in mid maturity, fade as fruit takes over =====
+  const bloom = flowerAmount(g)
+  if (bloom > 0) {
+    const flowerCount = Math.round(lerp(1, 5, bloom) * (0.6 + rng() * 0.8))
+    for (let i = 0; i < flowerCount; i++) {
+      const dx = (rng() - 0.5) * baseR * 1.7
+      const dy = (rng() - 0.5) * baseR * 1.3
+      const dz = (rng() - 0.5) * baseR * 1.7
+      addFlower(clusterGroup, dx, dy, dz, rng)
+    }
+  }
+
+  // ===== FRUITS — appear once the tree is well grown =====
+  if (g > 0.68) {
     const fruitMat = new THREE.MeshStandardMaterial({
-      color: fruitColor,
-      roughness: 0.5,
-      metalness: 0.1,
+      color: 0xe11d48,
+      roughness: 0.32,
+      metalness: 0.05,
+      emissive: 0x7f1d1d,
+      emissiveIntensity: 0.12,
     })
-    const fruitCount = 1 + Math.floor(rng() * 3)
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0x4d2a12, roughness: 0.9 })
+    const fruitCount = Math.round(lerp(1, 5, (g - 0.68) / 0.32) * (0.6 + rng() * 0.8))
     for (let i = 0; i < fruitCount; i++) {
-      const dx = (rng() - 0.5) * baseR * 1.2
-      const dy = (rng() - 0.5) * baseR * 0.6 - baseR * 0.3
-      const dz = (rng() - 0.5) * baseR * 1.2
-      const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), fruitMat)
+      const dx = (rng() - 0.5) * baseR * 1.4
+      const dy = (rng() - 0.5) * baseR * 0.7 - baseR * 0.35 // hang lower
+      const dz = (rng() - 0.5) * baseR * 1.4
+      const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), fruitMat)
       fruit.position.set(dx, dy, dz)
       fruit.castShadow = true
       clusterGroup.add(fruit)
+      // tiny stem
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.05, 4), stemMat)
+      stem.position.set(dx, dy + 0.06, dz)
+      clusterGroup.add(stem)
     }
   }
 
   clusters.push({ group: clusterGroup, phase: rng() * Math.PI * 2, amp: 0.7 + rng() * 0.6 })
+}
+
+/** Blossom density curve: 0 below 0.36, peaks ~0.58, fades out by 0.92. */
+function flowerAmount(g: number): number {
+  if (g < 0.36 || g > 0.92) return 0
+  if (g <= 0.58) return (g - 0.36) / (0.58 - 0.36)
+  return Math.max(0, 1 - (g - 0.58) / (0.92 - 0.58))
+}
+
+function addFlower(parent: THREE.Group, x: number, y: number, z: number, rng: () => number) {
+  const pink = rng() < 0.55
+  const petalColor = pink ? 0xffc1dd : 0xfff5fb
+  const petalMat = new THREE.MeshStandardMaterial({
+    color: petalColor,
+    roughness: 0.55,
+    emissive: petalColor,
+    emissiveIntensity: 0.1,
+    flatShading: true,
+  })
+  const flower = new THREE.Group()
+  flower.position.set(x, y, z)
+  const petalR = 0.038
+  for (let p = 0; p < 5; p++) {
+    const a = (p / 5) * Math.PI * 2
+    const petal = new THREE.Mesh(new THREE.SphereGeometry(petalR, 6, 5), petalMat)
+    petal.scale.set(1.5, 0.5, 1)
+    petal.position.set(Math.cos(a) * petalR * 1.25, 0, Math.sin(a) * petalR * 1.25)
+    petal.rotation.y = a
+    flower.add(petal)
+  }
+  const center = new THREE.Mesh(
+    new THREE.SphereGeometry(petalR * 0.65, 6, 5),
+    new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xca8a04, emissiveIntensity: 0.2 }),
+  )
+  flower.add(center)
+  // orient roughly outward (face up-ish with random tilt)
+  flower.rotation.x = -Math.PI / 2 + (rng() - 0.5) * 1.4
+  flower.rotation.z = rng() * Math.PI * 2
+  parent.add(flower)
 }

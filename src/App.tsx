@@ -21,6 +21,7 @@ import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPop
 import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
 import { LanguageToggle } from '@/components/layout/LanguageToggle'
 import { AnimatedWallpaper } from '@/components/wallpapers/AnimatedWallpaper'
+import { FlagBunting } from '@/components/FlagBunting'
 import { useWallpaperUrl } from '@/hooks/useWallpaperUrl'
 import { useSettingsStore } from '@/store/settings'
 import { getAnimatedDef, isAnimatedWallpaperId } from '@/lib/wallpapers'
@@ -29,6 +30,8 @@ export default function App() {
   const wallpaper = useWallpaperUrl()
   const wallpaperId = useSettingsStore((s) => s.wallpaperId)
   const contentWidth = useSettingsStore((s) => s.contentWidth)
+  const buntingEnabled = useSettingsStore((s) => s.buntingEnabled)
+  const buntingFlags = useSettingsStore((s) => s.buntingFlags)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const animatedDef = isAnimatedWallpaperId(wallpaperId) ? getAnimatedDef(wallpaperId) : null
@@ -46,14 +49,21 @@ export default function App() {
     }
   }, [wallpaper, animatedDef])
 
-  const maxWidthStyle: React.CSSProperties =
-    contentWidth === 'full' ? { maxWidth: 'none' } : { maxWidth: `${contentWidth}px` }
+  const maxWidthStyle: React.CSSProperties = {
+    ...(contentWidth === 'full' ? { maxWidth: 'none' } : { maxWidth: `${contentWidth}px` }),
+    // leave clearance for the hanging flags so they don't cover the header
+    ...(buntingEnabled && buntingFlags.length > 0 ? { paddingTop: 78 } : null),
+  }
 
   return (
     <div className="min-h-full">
       {animatedDef && <AnimatedWallpaper variant={animatedDef.variant} />}
       {/* Subtle overlay for legibility on bright wallpapers */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
+
+      {buntingEnabled && buntingFlags.length > 0 && (
+        <FlagBunting key={buntingFlags.join(',')} flags={buntingFlags} />
+      )}
 
       <main
         className="relative mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10"

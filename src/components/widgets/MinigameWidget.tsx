@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, type LucideIcon } from 'lucide-react'
 import { GlassCard } from '@/components/layout/GlassCard'
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { Tetris } from '@/components/minigames/Tetris'
 import { Sudoku } from '@/components/minigames/Sudoku'
 import { GoldMiner } from '@/components/minigames/GoldMiner'
 import { DinoGame } from '@/components/minigames/DinoGame'
+import { Game2048 } from '@/components/minigames/Game2048'
 import { type GameKey } from '@/store/minigame'
 import { useT } from '@/i18n/useT'
 
@@ -75,6 +76,13 @@ const GAMES: GameDef[] = [
     gradient: 'from-slate-500/30 to-zinc-700/20',
     color: 'text-slate-200',
     Component: DinoGame,
+  },
+  {
+    key: 'g2048',
+    icon: Grid2x2,
+    gradient: 'from-orange-500/30 to-yellow-600/20',
+    color: 'text-orange-200',
+    Component: Game2048,
   },
 ]
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Maximize2 } from 'lucide-react'
+import { AlertTriangle, Maximize2, Flag } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WallpaperPicker } from './WallpaperPicker'
 import { useSettingsStore, type ContentWidth } from '@/store/settings'
+import { FLAGS } from '@/lib/flags'
 import { useT } from '@/i18n/useT'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,19 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const setGreetingName = useSettingsStore((s) => s.setGreetingName)
   const contentWidth = useSettingsStore((s) => s.contentWidth)
   const setContentWidth = useSettingsStore((s) => s.setContentWidth)
+  const buntingEnabled = useSettingsStore((s) => s.buntingEnabled)
+  const setBuntingEnabled = useSettingsStore((s) => s.setBuntingEnabled)
+  const buntingFlags = useSettingsStore((s) => s.buntingFlags)
+  const setBuntingFlags = useSettingsStore((s) => s.setBuntingFlags)
+
+  const toggleFlag = (id: string) => {
+    if (buntingFlags.includes(id)) {
+      if (buntingFlags.length === 1) return // keep at least one
+      setBuntingFlags(buntingFlags.filter((f) => f !== id))
+    } else {
+      setBuntingFlags([...buntingFlags, id])
+    }
+  }
 
   const [confirmReset, setConfirmReset] = useState(false)
 
@@ -100,6 +114,57 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                   <SelectItem value="1280">{t('settings.widthCompact')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Top flag bunting */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Flag className="h-4 w-4" /> {t('settings.bunting')}
+                </Label>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={buntingEnabled}
+                  onClick={() => setBuntingEnabled(!buntingEnabled)}
+                  className={cn(
+                    'relative h-5 w-9 shrink-0 rounded-full transition-colors',
+                    buntingEnabled ? 'bg-primary' : 'bg-white/20',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform',
+                      buntingEnabled ? 'translate-x-4' : 'translate-x-0',
+                    )}
+                  />
+                </button>
+              </div>
+              {buntingEnabled && (
+                <>
+                  <p className="text-[11px] text-white/55">{t('settings.buntingHint')}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {FLAGS.map((f) => {
+                      const active = buntingFlags.includes(f.id)
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => toggleFlag(f.id)}
+                          className={cn(
+                            'px-2 py-1 rounded-md text-xs border transition-colors',
+                            active
+                              ? 'border-primary bg-primary/20 text-white'
+                              : 'border-white/15 bg-white/5 text-white/65 hover:bg-white/10',
+                          )}
+                        >
+                          {f.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="pt-2 border-t border-white/10">

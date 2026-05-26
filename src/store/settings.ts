@@ -23,6 +23,8 @@ type State = {
   weatherUnit: 'celsius' | 'fahrenheit'
   contentWidth: ContentWidth
   searchEngine: SearchEngineId
+  buntingEnabled: boolean
+  buntingFlags: string[]
 }
 
 type Actions = {
@@ -36,6 +38,8 @@ type Actions = {
   setWeatherUnit: (u: 'celsius' | 'fahrenheit') => void
   setContentWidth: (w: ContentWidth) => void
   setSearchEngine: (e: SearchEngineId) => void
+  setBuntingEnabled: (v: boolean) => void
+  setBuntingFlags: (flags: string[]) => void
 }
 
 const defaultLocale = (): 'vi' | 'en' => {
@@ -57,6 +61,8 @@ export const useSettingsStore = create<State & Actions>()(
       weatherUnit: 'celsius',
       contentWidth: 'full',
       searchEngine: DEFAULT_ENGINE,
+      buntingEnabled: true,
+      buntingFlags: ['vietnam'],
       setWallpaperId: (id) => set({ wallpaperId: id }),
       addCustomWallpaper: (meta) =>
         set((state) => ({ customWallpapers: [...state.customWallpapers, meta] })),
@@ -69,6 +75,8 @@ export const useSettingsStore = create<State & Actions>()(
       setWeatherUnit: (weatherUnit) => set({ weatherUnit }),
       setContentWidth: (contentWidth) => set({ contentWidth }),
       setSearchEngine: (searchEngine) => set({ searchEngine }),
+      setBuntingEnabled: (buntingEnabled) => set({ buntingEnabled }),
+      setBuntingFlags: (buntingFlags) => set({ buntingFlags }),
     }),
     {
       name: 'landing.settings.v1',
