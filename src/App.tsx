@@ -16,6 +16,7 @@ import { NotesWidget } from '@/components/widgets/NotesWidget'
 import { DrawingWidget } from '@/components/widgets/DrawingWidget'
 import { TreeWidget } from '@/components/widgets/TreeWidget'
 import { EnglishWidget } from '@/components/widgets/EnglishWidget'
+import { FootballWidget } from '@/components/widgets/FootballWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
@@ -102,6 +103,7 @@ export default function App() {
             { id: 'drawing', node: <DrawingWidget /> },
             { id: 'tree', node: <TreeWidget /> },
             { id: 'english', node: <EnglishWidget /> },
+            { id: 'football', node: <FootballWidget /> },
           ]}
         />
       </main>

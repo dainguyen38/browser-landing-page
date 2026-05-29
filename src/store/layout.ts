@@ -16,6 +16,7 @@ export type WidgetId =
   | 'drawing'
   | 'tree'
   | 'english'
+  | 'football'
 
 export type GridItem = {
   i: WidgetId
@@ -58,6 +59,7 @@ export const DEFAULT_LAYOUT: GridItem[] = [
   { i: 'tree', x: 5, y: 36, w: 4, h: 12, minW: 3, minH: 8, maxW: 12 },
   { i: 'drawing', x: 9, y: 36, w: 3, h: 12, minW: 3, minH: 7, maxW: 12 },
   { i: 'english', x: 0, y: 48, w: 12, h: 12, minW: 4, minH: 8, maxW: 12 },
+  { i: 'football', x: 0, y: 60, w: 7, h: 11, minW: 4, minH: 6, maxW: 12 },
 ]
 
 const DEFAULT_IDS: WidgetId[] = [
@@ -75,6 +77,7 @@ const DEFAULT_IDS: WidgetId[] = [
   'drawing',
   'tree',
   'english',
+  'football',
 ]
 
 export const useLayoutStore = create<State & Actions>()(

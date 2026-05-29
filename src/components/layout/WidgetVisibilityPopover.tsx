@@ -15,6 +15,7 @@ import {
   Brush,
   Sprout,
   GraduationCap,
+  Trophy,
   LayoutGrid,
   Search,
   Eye,
@@ -45,6 +46,7 @@ const ICONS: Record<WidgetId, LucideIcon> = {
   drawing: Brush,
   tree: Sprout,
   english: GraduationCap,
+  football: Trophy,
 }
 
 const ALL_WIDGETS: WidgetId[] = [
@@ -62,6 +64,7 @@ const ALL_WIDGETS: WidgetId[] = [
   'drawing',
   'tree',
   'english',
+  'football',
 ]
 
 export function WidgetVisibilityPopover() {

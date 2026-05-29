@@ -20,12 +20,15 @@ const STATIC_KEYS: Partial<Record<WidgetId, string[]>> = {
   english: ['landing.english.v1'],
 }
 
+const FOOTBALL_PREFIX = 'landing.football.v1:'
+
 const IDB_KEYS: Partial<Record<WidgetId, string[]>> = {
   minigame: ['flappy:bird:custom'],
 }
 
 const PREFIX_KEYS: Partial<Record<WidgetId, string[]>> = {
   currency: ['landing.fx.v1:'],
+  football: [FOOTBALL_PREFIX],
 }
 
 export const HAS_PERSISTED_DATA: Record<WidgetId, boolean> = {
@@ -43,6 +46,7 @@ export const HAS_PERSISTED_DATA: Record<WidgetId, boolean> = {
   drawing: false,
   tree: true,
   english: true,
+  football: true,
 }
 
 const CLEARERS: Partial<Record<WidgetId, Clearer>> = {}

@@ -1,5 +1,5 @@
 import { format, isPast, isToday, parseISO } from 'date-fns'
-import { Pencil, Trash2 } from 'lucide-react'
+import { GripVertical, Pencil, Trash2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,16 @@ import { cn } from '@/lib/utils'
 interface Props {
   todo: Todo
   onEdit: (todo: Todo) => void
+  /** When true, the row can be dragged to reorder. */
+  draggable?: boolean
+  /** True while THIS row is being dragged. */
+  isDragging?: boolean
+  /** True when the dragging row is hovering above this row → show top indicator. */
+  isDropTarget?: boolean
+  onDragStart?: (id: string) => void
+  onDragEnd?: () => void
+  onDragOverRow?: (id: string) => void
+  onDropRow?: (id: string) => void
 }
 
 const PRIORITY_VARIANT: Record<Todo['priority'], 'secondary' | 'warning' | 'destructive'> = {
@@ -19,9 +29,21 @@ const PRIORITY_VARIANT: Record<Todo['priority'], 'secondary' | 'warning' | 'dest
   high: 'destructive',
 }
 
-export const TODO_GRID = 'grid-cols-[24px_minmax(160px,1fr)_84px_104px_minmax(80px,140px)_64px]'
+// 18px grip handle + checkbox + text + priority + due + category + actions
+export const TODO_GRID =
+  'grid-cols-[18px_24px_minmax(140px,1fr)_84px_104px_minmax(80px,140px)_72px]'
 
-export function TodoItem({ todo, onEdit }: Props) {
+export function TodoItem({
+  todo,
+  onEdit,
+  draggable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragEnd,
+  onDragOverRow,
+  onDropRow,
+}: Props) {
   const { t, dateLocale } = useT()
   const toggle = useTodosStore((s) => s.toggle)
   const remove = useTodosStore((s) => s.remove)
@@ -38,12 +60,57 @@ export function TodoItem({ todo, onEdit }: Props) {
 
   return (
     <div
+      draggable={draggable}
+      onDragStart={(e) => {
+        if (!draggable) return
+        e.dataTransfer.effectAllowed = 'move'
+        try {
+          e.dataTransfer.setData('text/plain', todo.id)
+        } catch {
+          /* some browsers throw on setData */
+        }
+        onDragStart?.(todo.id)
+      }}
+      onDragEnd={() => onDragEnd?.()}
+      onDragOver={(e) => {
+        if (!draggable) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        onDragOverRow?.(todo.id)
+      }}
+      onDrop={(e) => {
+        if (!draggable) return
+        e.preventDefault()
+        onDropRow?.(todo.id)
+      }}
       className={cn(
-        'grid items-center gap-3 px-3 py-2 border-b border-white/5 transition-colors group/row',
+        'grid items-center gap-3 px-3 py-2 border-b border-white/5 transition-colors group/row relative',
         TODO_GRID,
         overdue ? 'bg-rose-500/10 hover:bg-rose-500/15' : 'hover:bg-white/5',
+        isDragging && 'opacity-40',
+        isDropTarget &&
+          'before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary before:rounded-full',
       )}
     >
+      <button
+        type="button"
+        aria-label={t('todo.dragHandle')}
+        title={draggable ? t('todo.dragHandle') : t('todo.dragDisabled')}
+        // grip itself is non-draggable so the whole row drag is captured;
+        // visual cursor signals draggability
+        className={cn(
+          'flex items-center justify-center -ml-0.5 transition-colors',
+          draggable
+            ? 'cursor-grab active:cursor-grabbing text-white/35 hover:text-white/80'
+            : 'cursor-not-allowed text-white/15',
+        )}
+        // Suppress click — the grip is purely a visual affordance; drag is on the row
+        onClick={(e) => e.preventDefault()}
+        tabIndex={-1}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
       <div className="flex items-center justify-center">
         <Checkbox checked={todo.completed} onCheckedChange={() => toggle(todo.id)} />
       </div>
@@ -79,13 +146,13 @@ export function TodoItem({ todo, onEdit }: Props) {
         {todo.category ? todo.category : <span className="text-white/30">—</span>}
       </div>
 
-      <div className="flex items-center justify-end opacity-0 group-hover/row:opacity-100 transition-opacity">
+      <div className="flex items-center justify-end">
         <Button
           size="icon"
           variant="ghost"
           onClick={() => onEdit(todo)}
           aria-label={t('common.edit')}
-          className="h-7 w-7"
+          className="h-7 w-7 text-white/55 hover:text-white"
         >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -94,7 +161,7 @@ export function TodoItem({ todo, onEdit }: Props) {
           variant="ghost"
           onClick={() => remove(todo.id)}
           aria-label={t('common.delete')}
-          className="h-7 w-7 text-rose-300 hover:text-rose-200"
+          className="h-7 w-7 text-rose-300/70 hover:text-rose-200"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -112,6 +179,7 @@ export function TodoHeader() {
         TODO_GRID,
       )}
     >
+      <div></div>
       <div></div>
       <div>{t('todo.title')}</div>
       <div>{t('todo.priority')}</div>

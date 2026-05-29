@@ -28,6 +28,7 @@ type Actions = {
   toggle: (id: string) => void
   update: (id: string, patch: Partial<Omit<Todo, 'id' | 'createdAt'>>) => void
   remove: (id: string) => void
+  reorder: (orderedIds: string[]) => void
   clearCompleted: () => void
   setFilter: (f: TodoFilter) => void
   setSort: (s: TodoSort) => void
@@ -58,6 +59,24 @@ export const useTodosStore = create<State & Actions>()(
         set((state) => ({
           todos: state.todos.filter((t) => t.id !== id),
         })),
+      reorder: (orderedIds) =>
+        set((state) => {
+          const byId = new Map(state.todos.map((t) => [t.id, t]))
+          const reordered: Todo[] = []
+          const seen = new Set<string>()
+          for (const id of orderedIds) {
+            const todo = byId.get(id)
+            if (todo && !seen.has(id)) {
+              reordered.push(todo)
+              seen.add(id)
+            }
+          }
+          // Append any todos that weren't in the orderedIds list (defensive)
+          for (const t of state.todos) {
+            if (!seen.has(t.id)) reordered.push(t)
+          }
+          return { todos: reordered }
+        }),
       clearCompleted: () =>
         set((state) => ({
           todos: state.todos.filter((t) => !t.completed),
