@@ -18,6 +18,7 @@ const STATIC_KEYS: Partial<Record<WidgetId, string[]>> = {
   notes: ['landing.notes.v1'],
   tree: ['landing.tree.v2', 'landing.tree.v1'],
   english: ['landing.english.v1'],
+  typing: ['landing.typing.v1'],
 }
 
 const FOOTBALL_PREFIX = 'landing.football.v1:'
@@ -47,6 +48,7 @@ export const HAS_PERSISTED_DATA: Record<WidgetId, boolean> = {
   tree: true,
   english: true,
   football: true,
+  typing: true,
 }
 
 const CLEARERS: Partial<Record<WidgetId, Clearer>> = {}

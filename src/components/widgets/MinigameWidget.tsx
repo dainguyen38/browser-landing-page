@@ -114,14 +114,24 @@ export function MinigameWidget() {
       </GlassCard>
 
       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
-        <DialogContent className="max-w-3xl w-[min(95vw,720px)] max-h-[95vh] overflow-hidden p-5">
-          <DialogHeader>
+        <DialogContent
+          className={active === 'flappy'
+            ? 'w-[96vw] max-w-[1120px] h-[min(92dvh,760px)] max-h-[92dvh] overflow-hidden rounded-2xl border-white/15 p-0 gap-0 [&>button:last-child]:z-30 [&>button:last-child]:rounded-full [&>button:last-child]:bg-slate-950/40 [&>button:last-child]:p-2 [&>button:last-child]:text-white'
+            : `max-w-3xl w-[min(95vw,720px)] max-h-[95vh] p-5 ${active === 'snake' ? 'overflow-y-auto' : 'overflow-hidden'}`}
+          onOpenAutoFocus={(event) => {
+            if (active === 'flappy') {
+              event.preventDefault()
+              document.getElementById('flappy-canvas')?.focus({ preventScroll: true })
+            }
+          }}
+        >
+          <DialogHeader className={active === 'flappy' ? 'sr-only' : undefined}>
             <DialogTitle className="flex items-center gap-2">
               {activeGame && <activeGame.icon className={`h-5 w-5 ${activeGame.color}`} />}
               {activeGame && t(`minigame.games.${activeGame.key}`)}
             </DialogTitle>
           </DialogHeader>
-          <div className="min-h-0 flex flex-col">{ActiveComp && <ActiveComp />}</div>
+          <div className={`min-h-0 flex flex-col ${active === 'flappy' ? 'h-full w-full' : ''}`}>{ActiveComp && <ActiveComp />}</div>
         </DialogContent>
       </Dialog>
     </>

@@ -16,6 +16,7 @@ import {
   Sprout,
   GraduationCap,
   Trophy,
+  Keyboard as KeyboardIcon,
   LayoutGrid,
   Search,
   Eye,
@@ -47,6 +48,7 @@ const ICONS: Record<WidgetId, LucideIcon> = {
   tree: Sprout,
   english: GraduationCap,
   football: Trophy,
+  typing: KeyboardIcon,
 }
 
 const ALL_WIDGETS: WidgetId[] = [
@@ -65,6 +67,7 @@ const ALL_WIDGETS: WidgetId[] = [
   'tree',
   'english',
   'football',
+  'typing',
 ]
 
 export function WidgetVisibilityPopover() {
@@ -110,7 +113,7 @@ export function WidgetVisibilityPopover() {
           <button
             type="button"
             aria-label={t('widgets.toggleVisibility')}
-            className="relative inline-flex items-center justify-center h-9 w-9 rounded-md bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/15 text-white transition-colors"
+            className="relative inline-flex items-center justify-center h-9 w-9 rounded-md bg-black/35 hover:bg-black/55 border border-white/15 text-white transition-colors"
           >
             <LayoutGrid className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-primary text-primary-foreground rounded-full h-4 min-w-4 px-1 flex items-center justify-center">

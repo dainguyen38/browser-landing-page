@@ -51,21 +51,89 @@
     @apply text-foreground antialiased;
     font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #0a0a0f;
+    /* Wallpaper has moved to a dedicated <div class="wallpaper-layer"> in
+       App.tsx. `background-attachment: fixed` on body combined with
+       backdrop-filter caused Chrome to share a single resampled layer for
+       every glass card — any hover-triggered repaint anywhere on the page
+       would re-sample that layer for ALL cards, producing partial-image
+       artefacts on non-hovered cards. */
+  }
+  .wallpaper-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
     background-size: cover;
     background-position: center center;
-    background-attachment: fixed;
+    background-color: #0a0a0f;
     transition: background-image 0.5s ease;
+    /* Promote to its own compositing layer so backdrop-filter consumers see
+       a stable, independently-cached source. */
+    will-change: transform;
+    transform: translateZ(0);
   }
 }
 
 @layer components {
+  /*
+   * Glass card — backdrop-filter is on a ::before pseudo-element with its
+   * own GPU compositing layer, NOT on the card itself. Hover transitions on
+   * the card's interactive children (buttons, list rows) repaint the card's
+   * CONTENT layer, but the ::before sits on a separate, layer-cached layer
+   * that hover repaints can't touch — so the blur never desyncs across cards.
+   *
+   * Blur radius reduced to 20px (Tailwind's `backdrop-blur-xl`) to lower the
+   * compositor cost per frame; visually nearly identical, much less likely
+   * to glitch under load.
+   */
   .glass {
-    @apply backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl text-white;
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1rem;
+    color: white;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    /* Establish stacking context so the negative-z ::before backdrop layer
+       stays inside the card box (and doesn't sink behind the document). */
+    isolation: isolate;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    pointer-events: none;
+    /* Force own GPU layer so hover repaints in the card content can't dirty
+       this layer's cached blur output. */
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   .glass-strong {
-    @apply backdrop-blur-3xl bg-black/40 border border-white/15 rounded-2xl text-white;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.40);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 1rem;
+    color: white;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    isolation: isolate;
+  }
+  .glass-strong::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   .text-soft-shadow {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -91,7 +159,9 @@
 .react-grid-item > .react-resizable-handle {
   background-image: none;
   opacity: 0;
-  transition: opacity 150ms ease;
+  /* No transition: a 150ms opacity tween triggers continuous backdrop-filter
+     repaints on the host card and on its neighbours. Snap the handle in/out
+     instead — visually nearly identical, eliminates the repaint window. */
 }
 .react-grid-item:hover > .react-resizable-handle {
   opacity: 1;

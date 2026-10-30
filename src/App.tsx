@@ -17,6 +17,7 @@ import { DrawingWidget } from '@/components/widgets/DrawingWidget'
 import { TreeWidget } from '@/components/widgets/TreeWidget'
 import { EnglishWidget } from '@/components/widgets/EnglishWidget'
 import { FootballWidget } from '@/components/widgets/FootballWidget'
+import { TypingWidget } from '@/components/widgets/TypingWidget'
 import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import { WidgetVisibilityPopover } from '@/components/layout/WidgetVisibilityPopover'
 import { QuickSearchBar } from '@/components/layout/QuickSearchBar'
@@ -37,18 +38,22 @@ export default function App() {
 
   const animatedDef = isAnimatedWallpaperId(wallpaperId) ? getAnimatedDef(wallpaperId) : null
 
+  // Wallpaper now lives on a dedicated <div.wallpaper-layer> (rendered below)
+  // rather than on `document.body`. That isolates its compositing layer from
+  // the cards' backdrop-filter so hover repaints can't corrupt the blur source.
+  // Belt-and-braces: clear any leftover body styles from older builds.
   useEffect(() => {
-    if (animatedDef) {
-      // animated wallpaper is rendered by <AnimatedWallpaper /> below
-      document.body.style.backgroundImage = 'none'
-      document.body.style.backgroundColor = '#0a0a0f'
-      return
-    }
-    if (wallpaper) {
-      document.body.style.backgroundImage = `url("${wallpaper}")`
-      document.body.style.backgroundColor = ''
-    }
-  }, [wallpaper, animatedDef])
+    document.body.style.backgroundImage = ''
+    document.body.style.backgroundColor = ''
+  }, [])
+
+  const wallpaperBgStyle: React.CSSProperties = animatedDef
+    ? // Animated wallpaper draws its own canvas at z=-10; make this layer
+      // transparent so it doesn't cover that canvas.
+      { backgroundImage: 'none', backgroundColor: 'transparent' }
+    : wallpaper
+    ? { backgroundImage: `url("${wallpaper}")` }
+    : {}
 
   const maxWidthStyle: React.CSSProperties = {
     ...(contentWidth === 'full' ? { maxWidth: 'none' } : { maxWidth: `${contentWidth}px` }),
@@ -58,6 +63,10 @@ export default function App() {
 
   return (
     <div className="min-h-full">
+      {/* Dedicated wallpaper compositing layer — kept out of the body
+         background so backdrop-filter on cards has a stable, layer-cached
+         source that isn't disturbed by sibling repaints. */}
+      <div className="wallpaper-layer" style={wallpaperBgStyle} />
       {animatedDef && <AnimatedWallpaper variant={animatedDef.variant} />}
       {/* Subtle overlay for legibility on bright wallpapers */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
@@ -80,7 +89,7 @@ export default function App() {
               size="icon"
               onClick={() => setSettingsOpen(true)}
               aria-label="Settings"
-              className="backdrop-blur-xl"
+              className="bg-black/35 hover:bg-black/55 border border-white/15"
             >
               <SettingsIcon className="h-4 w-4" />
             </Button>
@@ -104,6 +113,7 @@ export default function App() {
             { id: 'tree', node: <TreeWidget /> },
             { id: 'english', node: <EnglishWidget /> },
             { id: 'football', node: <FootballWidget /> },
+            { id: 'typing', node: <TypingWidget /> },
           ]}
         />
       </main>

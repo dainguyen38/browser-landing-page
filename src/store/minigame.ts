@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import type { Environment } from '@/lib/flappy/scene'
+import type { BirdStyle } from '@/lib/flappy/birds'
 
 export type GameKey = 'snake' | 'flappy' | 'tetris' | 'sudoku' | 'goldminer' | 'dino' | 'g2048'
 
@@ -7,18 +9,36 @@ const ALL_GAMES: GameKey[] = ['snake', 'flappy', 'tetris', 'sudoku', 'goldminer'
 
 type State = {
   highScores: Record<GameKey, number>
+  flappyRecord: { name: string; score: number; recordedAt: number } | null
+  flappyEnvironment: Environment
+  flappyBird: BirdStyle | 'custom'
 }
 
 type Actions = {
   recordScore: (game: GameKey, score: number) => void
+  claimFlappyRecord: (score: number, name: string) => boolean
+  selectFlappyEnvironment: (environment: Environment) => void
+  selectFlappyBird: (bird: BirdStyle | 'custom') => void
 }
 
 export const useMinigameStore = create<State & Actions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       highScores: { snake: 0, flappy: 0, tetris: 0, sudoku: 0, goldminer: 0, dino: 0, g2048: 0 },
+      flappyRecord: null,
+      flappyBird: 'canary',
+      flappyEnvironment: 'day',
+      selectFlappyEnvironment: (flappyEnvironment) => set({ flappyEnvironment }),
+      selectFlappyBird: (flappyBird) => set({ flappyBird }),
+      claimFlappyRecord: (score, name) => {
+        const trimmed = name.trim().slice(0, 32)
+        if (!trimmed || score <= 0 || score !== get().highScores.flappy) return false
+        set({ flappyRecord: { score, name: trimmed, recordedAt: Date.now() } })
+        return true
+      },
       recordScore: (game, score) =>
         set((state) => ({
+          flappyRecord: game === 'flappy' && score > state.highScores.flappy ? null : state.flappyRecord,
           highScores: {
             ...state.highScores,
             [game]: Math.max(state.highScores[game], score),

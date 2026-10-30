@@ -175,7 +175,7 @@ export function QuickSearchBar() {
               type="button"
               aria-label={t('quickSearch.engine')}
               title={engine.name}
-              className="inline-flex items-center gap-1 h-10 pl-2 pr-1.5 rounded-l-full bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/15 border-r-0 text-white text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1 h-10 pl-2 pr-1.5 rounded-l-full bg-black/35 hover:bg-black/55 border border-white/15 border-r-0 text-white text-xs font-semibold transition-colors"
             >
               <EngineLogo engineId={engine.id} size={20} />
               <ChevronDown className="h-3 w-3 opacity-70" />
@@ -231,7 +231,7 @@ export function QuickSearchBar() {
             placeholder={t('quickSearch.placeholder')}
             spellCheck={false}
             autoComplete="off"
-            className="w-full h-10 pl-10 pr-10 rounded-r-full bg-white/10 hover:bg-white/15 focus:bg-white/15 backdrop-blur-xl border border-white/15 focus:border-white/35 text-white placeholder:text-white/45 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
+            className="w-full h-10 pl-10 pr-10 rounded-r-full bg-black/35 hover:bg-black/45 focus:bg-black/55 border border-white/15 focus:border-white/35 text-white placeholder:text-white/45 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
           />
           {value && (
             <button

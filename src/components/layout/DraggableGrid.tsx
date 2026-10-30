@@ -83,11 +83,16 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
       allowOverlap={false}
     >
       {visibleIds.map((id) => (
-        <div key={id} className="group/widget relative">
+        // `isolate` creates a new stacking context so any hover-triggered
+        // repaint inside this widget cannot leak into neighbouring cards'
+        // backdrop-filter blur. Pair with `translateZ(0)` on `.glass`.
+        <div key={id} className="group/widget relative isolate">
           <button
             type="button"
             aria-label="Drag widget"
-            className="drag-handle absolute top-2 right-2 z-20 inline-flex items-center justify-center h-8 w-8 rounded-md bg-white/5 text-white/60 hover:text-white hover:bg-white/15 opacity-0 group-hover/widget:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+            // No `transition-opacity` — that 150ms fade was a continuous
+            // source of backdrop-filter repaints. Snap visibility instead.
+            className="drag-handle absolute top-2 right-2 z-20 inline-flex items-center justify-center h-8 w-8 rounded-md bg-white/5 text-white/60 hover:text-white hover:bg-white/15 opacity-0 group-hover/widget:opacity-100 cursor-grab active:cursor-grabbing"
           >
             <GripVertical className="h-4 w-4" />
           </button>
