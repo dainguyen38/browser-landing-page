@@ -1,5 +1,5 @@
-import { useGameSession } from './GameSession'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
+import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
@@ -74,54 +74,66 @@ export function DinoGame() {
   const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const stateRef = useRef<GameState>(initial())
-  const [score, setScore] = useState(0)
-  const [over, setOver] = useState(false)
-  const [running, setRunning] = useState(false)
+  const stateRef = useGameRef<GameState>('engine', initial)
+  const [score, setScore] = useGameState('score', 0)
+  const [over, setOver] = useGameState('over', false)
+  const [running, setRunning] = useGameState('running', false)
   const highScore = useMinigameStore((s) => s.highScores.dino ?? 0)
   const recordScore = useMinigameStore((s) => s.recordScore)
 
+  useEffect(() => { stateRef.current.ducking = false }, [])
+
   const jump = useCallback(() => {
-    if (session.paused) return
-    const st = stateRef.current
-    if (!running || st.over) return
-    if (st.dinoY >= GROUND_Y - 44 - 0.5) {
-      st.dinoVY = JUMP_VY
-    }
+    return session.guard(() => {
+      if (session.paused) return
+      const st = stateRef.current
+      if (!running || st.over) return
+      if (st.dinoY >= GROUND_Y - 44 - 0.5) {
+        st.dinoVY = JUMP_VY
+      }
+    })
   }, [running])
 
   const setDuck = useCallback(
     (down: boolean) => {
-      const st = stateRef.current
-      if (!running || st.over) return
-      st.ducking = down
+      return session.guard(() => {
+        const st = stateRef.current
+        if (!running || st.over) return
+        st.ducking = down
+      })
     },
     [running],
   )
 
   const start = useCallback(() => {
-    stateRef.current = initial()
-    setScore(0)
-    setOver(false)
-    setRunning(true)
+    return session.guard(() => {
+      stateRef.current = initial()
+      setScore(0)
+      setOver(false)
+      setRunning(true)
+    })
   }, [])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (session.paused) return
-      const a = document.activeElement
-      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-        e.preventDefault()
-        if (!running && !stateRef.current.over) start()
-        else jump()
-      } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-        e.preventDefault()
-        setDuck(true)
-      }
+      return session.guard(() => {
+        if (session.paused) return
+        const a = document.activeElement
+        if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+        if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+          e.preventDefault()
+          if (!running && !stateRef.current.over) start()
+          else jump()
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+          e.preventDefault()
+          setDuck(true)
+        }
+      })
     }
     function onKeyUp(e: KeyboardEvent) {
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') setDuck(false)
+      return session.guard(() => {
+        if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') setDuck(false)
+      })
     }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -403,14 +415,14 @@ export function DinoGame() {
     }
 
     let last = performance.now()
-    const loop = (t: number) => {
+    const loop = (t: number) => session.guard(() => {
       const dt = Math.min(2.5, (t - last) / (1000 / 60))
       last = t
-      if (session.paused) { raf = requestAnimationFrame(loop); return }
+      if (session.paused) { draw(); raf = requestAnimationFrame(loop); return }
       if (running) update(dt)
       draw()
       raf = requestAnimationFrame(loop)
-    }
+    })
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [running, recordScore, highScore])

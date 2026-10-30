@@ -1,5 +1,5 @@
-import { useGameSession } from './GameSession'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
+import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
@@ -130,63 +130,73 @@ export function GoldMiner() {
   const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const stateRef = useRef<GameState>(initial())
-  const [score, setScore] = useState(0)
-  const [target, setTarget] = useState(targetForLevel(1))
-  const [level, setLevel] = useState(1)
-  const [timeLeft, setTimeLeft] = useState(60)
-  const [running, setRunning] = useState(false)
-  const [over, setOver] = useState(false)
-  const [won, setWon] = useState(false)
+  const stateRef = useGameRef<GameState>('engine', initial)
+  const [score, setScore] = useGameState('score', 0)
+  const [target, setTarget] = useGameState('target', targetForLevel(1))
+  const [level, setLevel] = useGameState('level', 1)
+  const [timeLeft, setTimeLeft] = useGameState('timeLeft', 60)
+  const [running, setRunning] = useGameState('running', false)
+  const [over, setOver] = useGameState('over', false)
+  const [won, setWon] = useGameState('won', false)
   const highScore = useMinigameStore((s) => s.highScores.goldminer)
   const recordScore = useMinigameStore((s) => s.recordScore)
 
   const start = useCallback(() => {
-    stateRef.current = initial(1, 0)
-    setScore(0)
-    setTarget(targetForLevel(1))
-    setLevel(1)
-    setTimeLeft(60)
-    setRunning(true)
-    setOver(false)
-    setWon(false)
+    return session.guard(() => {
+      stateRef.current = initial(1, 0)
+      setScore(0)
+      setTarget(targetForLevel(1))
+      setLevel(1)
+      setTimeLeft(60)
+      setRunning(true)
+      setOver(false)
+      setWon(false)
+    })
   }, [])
 
   const nextLevel = useCallback(() => {
-    const cur = stateRef.current
-    stateRef.current = initial(cur.level + 1, cur.score)
-    setLevel(cur.level + 1)
-    setTarget(stateRef.current.target)
-    setTimeLeft(60)
-    setOver(false)
-    setWon(false)
-    setRunning(true)
+    return session.guard(() => {
+      const cur = stateRef.current
+      stateRef.current = initial(cur.level + 1, cur.score)
+      setLevel(cur.level + 1)
+      setTarget(stateRef.current.target)
+      setTimeLeft(60)
+      setOver(false)
+      setWon(false)
+      setRunning(true)
+    })
   }, [])
 
   const claimLevel = useCallback(() => {
-    const st = stateRef.current
-    if (st.score < st.target) return
-    st.won = true
-    setWon(true)
-    setRunning(false)
+    return session.guard(() => {
+      const st = stateRef.current
+      if (st.score < st.target) return
+      st.won = true
+      setWon(true)
+      setRunning(false)
+    })
   }, [])
 
   const dropClaw = useCallback(() => {
-    const st = stateRef.current
-    if (session.paused || st.clawState !== 'swing' || st.over) return
-    st.clawState = 'descend'
+    return session.guard(() => {
+      const st = stateRef.current
+      if (session.paused || st.clawState !== 'swing' || st.over) return
+      st.clawState = 'descend'
+    })
   }, [])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (session.paused) return
-      const a = document.activeElement
-      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
-      if (!running) return
-      if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-        e.preventDefault()
-        dropClaw()
-      }
+      return session.guard(() => {
+        if (session.paused) return
+        const a = document.activeElement
+        if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+        if (!running) return
+        if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+          e.preventDefault()
+          dropClaw()
+        }
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -322,14 +332,14 @@ export function GoldMiner() {
     }
 
     let last = performance.now()
-    const loop = (t: number) => {
+    const loop = (t: number) => session.guard(() => {
       const dt = Math.min(0.05, (t - last) / 1000)
       last = t
-      if (session.paused) { raf = requestAnimationFrame(loop); return }
+      if (session.paused) { draw(); raf = requestAnimationFrame(loop); return }
       update(dt)
       draw()
       if (!stateRef.current.over && !stateRef.current.won) raf = requestAnimationFrame(loop)
-    }
+    })
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [running, recordScore])

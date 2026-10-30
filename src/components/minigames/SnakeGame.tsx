@@ -1,4 +1,4 @@
-import { useGameSession } from './GameSession'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw, Upload, X, Settings2, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,12 +34,12 @@ export function SnakeGame() {
   const boardHostRef = useRef<HTMLDivElement>(null)
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 })
   const [setupOpen, setSetupOpen] = useState(false)
-  const [options, setOptions] = useState<Options>(DEFAULT_OPTIONS)
-  const [snakeStyle, setSnakeStyle] = useState<SnakeStyle>('emerald')
+  const [options, setOptions] = useGameState<Options>('options', DEFAULT_OPTIONS)
+  const [snakeStyle, setSnakeStyle] = useGameState<SnakeStyle>('snakeStyle', 'emerald')
   const { cols, rows } = BOARD_SIZES[options.size]
   const W = cols * CELL
   const H = rows * CELL
-  const stateRef = useRef<GameState | null>(null)
+  const stateRef = useGameRef<GameState | null>('engine', null)
   if (!stateRef.current) stateRef.current = initial()
   const customImgRef = useRef<HTMLImageElement | null>(null)
   const customUrlRef = useRef<string | null>(null)
@@ -48,57 +48,84 @@ export function SnakeGame() {
   const [headRevision, setHeadRevision] = useState(0)
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
-  const [score, setScore] = useState(0)
-  const [over, setOver] = useState(false)
-  const [running, setRunning] = useState(false)
+  const [score, setScore] = useGameState('score', 0)
+  const [over, setOver] = useGameState('over', false)
+  const [running, setRunning] = useGameState('running', false)
   const highScore = useMinigameStore((s) => s.highScores.snake)
   const recordScore = useMinigameStore((s) => s.recordScore)
 
   const handleDir = useCallback((d: Dir) => {
-    const st = stateRef.current!
-    if (session.paused || !running || st.over) return
-    if (d !== OPPOSITE[st.dir]) st.pendingDir = d
+    return session.guard(() => {
+      const st = stateRef.current!
+      if (session.paused || !running || st.over) return
+      if (d !== OPPOSITE[st.dir]) st.pendingDir = d
+    })
   }, [running])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (session.paused) return
-      const active = document.activeElement
-      if (!running || (active instanceof HTMLElement && active.closest('input, textarea, select, [role=combobox], [contenteditable=true]'))) return
-      const map: Record<string, Dir> = {
-        ArrowUp: 'up',
-        ArrowDown: 'down',
-        ArrowLeft: 'left',
-        ArrowRight: 'right',
-        w: 'up',
-        s: 'down',
-        a: 'left',
-        d: 'right',
-        W: 'up',
-        S: 'down',
-        A: 'left',
-        D: 'right',
-      }
-      const dir = map[e.key]
-      if (!dir) return
-      e.preventDefault()
-      handleDir(dir)
+      return session.guard(() => {
+        if (session.paused) return
+        const active = document.activeElement
+        if (!running || (active instanceof HTMLElement && active.closest('input, textarea, select, [role=combobox], [contenteditable=true]'))) return
+        const map: Record<string, Dir> = {
+          ArrowUp: 'up',
+          ArrowDown: 'down',
+          ArrowLeft: 'left',
+          ArrowRight: 'right',
+          w: 'up',
+          s: 'down',
+          a: 'left',
+          d: 'right',
+          W: 'up',
+          S: 'down',
+          A: 'left',
+          D: 'right',
+        }
+        const dir = map[e.key]
+        if (!dir) return
+        e.preventDefault()
+        handleDir(dir)
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [handleDir, running])
 
   const start = useCallback(() => {
-    stateRef.current = initial(options)
-    setScore(0)
-    setOver(false)
-    setSetupOpen(false)
-    setRunning(true)
+    return session.guard(() => {
+      stateRef.current = initial(options)
+      setScore(0)
+      setOver(false)
+      setSetupOpen(false)
+      setRunning(true)
+    })
   }, [options])
 
-  useEffect(() => () => {
-    uploadVersion.current++
-    if (customUrlRef.current) URL.revokeObjectURL(customUrlRef.current)
+  useEffect(() => {
+    let cancelled = false
+    const version = uploadVersion.current
+    const file = session.assets.get('head')
+    if (file) {
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.src = url
+      void img.decode().then(() => {
+        if (cancelled || version !== uploadVersion.current) { URL.revokeObjectURL(url); return }
+        customUrlRef.current = url
+        customImgRef.current = img
+        setHasCustom(true)
+        setHeadRevision((value) => value + 1)
+      }).catch(() => {
+        URL.revokeObjectURL(url)
+        if (!cancelled && version === uploadVersion.current) setImageError(true)
+      })
+    }
+    return () => {
+      cancelled = true
+      uploadVersion.current++
+      if (customUrlRef.current) URL.revokeObjectURL(customUrlRef.current)
+    }
   }, [])
 
   const uploadHead = async (file: File) => {
@@ -122,6 +149,7 @@ export function SnakeGame() {
       if (customUrlRef.current) URL.revokeObjectURL(customUrlRef.current)
       customUrlRef.current = url
       customImgRef.current = img
+      session.assets.set('head', file)
       setHeadRevision((value) => value + 1)
       setHasCustom(true)
     } catch {
@@ -192,7 +220,7 @@ export function SnakeGame() {
 
     let lastFrame = performance.now()
     let accumulated = 0
-    const loop = (now: number) => {
+    const loop = (now: number) => session.guard(() => {
       const st = stateRef.current!
       const delta = document.hidden ? 0 : Math.min(100, now - lastFrame)
       lastFrame = now
@@ -212,8 +240,8 @@ export function SnakeGame() {
         setRunning(false)
         recordScore('snake', st.score)
       } else raf = requestAnimationFrame(loop)
-    }
-    draw()
+    })
+    session.guard(draw)
     if (running) raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [running, recordScore, headRevision, snakeStyle, options, W, H])
@@ -281,6 +309,7 @@ export function SnakeGame() {
               </label>
               {hasCustom && <Button variant="ghost" size="sm" className="h-11 text-sm" onClick={() => {
                 uploadVersion.current++
+                session.assets.delete('head')
                 customImgRef.current = null
                 if (customUrlRef.current) URL.revokeObjectURL(customUrlRef.current)
                 customUrlRef.current = null

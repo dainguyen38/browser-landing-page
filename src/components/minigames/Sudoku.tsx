@@ -1,5 +1,5 @@
-import { useGameSession } from './GameSession'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
+import { useCallback, useEffect, useMemo } from 'react'
 import { RotateCcw, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -122,31 +122,33 @@ const DIFFICULTY_BONUS: Record<Difficulty, number> = { easy: 100, medium: 250, h
 export function Sudoku() {
   const session = useGameSession()
   const { t } = useT()
-  const [difficulty, setDifficulty] = useState<Difficulty>('easy')
+  const [difficulty, setDifficulty] = useGameState<Difficulty>('difficulty', 'easy')
   const initialPuzzle = useMemo(() => generate('easy'), [])
-  const [board, setBoard] = useState<Cell[][]>(initialPuzzle.puzzle)
-  const [solution, setSolution] = useState<number[][]>(initialPuzzle.solution)
-  const [selected, setSelected] = useState<{ r: number; c: number } | null>(null)
-  const [seconds, setSeconds] = useState(0)
-  const [running, setRunning] = useState(true)
-  const [solved, setSolved] = useState(false)
+  const [board, setBoard] = useGameState<Cell[][]>('board', initialPuzzle.puzzle)
+  const [solution, setSolution] = useGameState<number[][]>('solution', initialPuzzle.solution)
+  const [selected, setSelected] = useGameState<{ r: number; c: number } | null>('selected', null)
+  const [seconds, setSeconds] = useGameState('seconds', 0)
+  const [running, setRunning] = useGameState('running', true)
+  const [solved, setSolved] = useGameState('solved', false)
   const highScore = useMinigameStore((s) => s.highScores.sudoku)
   const recordScore = useMinigameStore((s) => s.recordScore)
-  const claimedRef = useRef(false)
+  const claimedRef = useGameRef('claimed', false)
 
   const errors = useMemo(() => countErrors(board, solution), [board, solution])
 
   const newGame = useCallback(
     (diff: Difficulty) => {
-      const { puzzle, solution } = generate(diff)
-      setBoard(puzzle)
-      setSolution(solution)
-      setSelected(null)
-      setSeconds(0)
-      setRunning(true)
-      setSolved(false)
-      claimedRef.current = false
-      setDifficulty(diff)
+      return session.guard(() => {
+        const { puzzle, solution } = generate(diff)
+        setBoard(puzzle)
+        setSolution(solution)
+        setSelected(null)
+        setSeconds(0)
+        setRunning(true)
+        setSolved(false)
+        claimedRef.current = false
+        setDifficulty(diff)
+      })
     },
     [],
   )
@@ -173,12 +175,14 @@ export function Sudoku() {
 
   const setValue = useCallback(
     (r: number, c: number, v: number) => {
-      if (session.paused) return
-      setBoard((prev) => {
-        if (prev[r][c].fixed) return prev
-        const next = prev.map((row) => row.map((cell) => ({ ...cell })))
-        next[r][c].value = v
-        return next
+      return session.guard(() => {
+        if (session.paused) return
+        setBoard((prev) => {
+          if (prev[r][c].fixed) return prev
+          const next = prev.map((row) => row.map((cell) => ({ ...cell })))
+          next[r][c].value = v
+          return next
+        })
       })
     },
     [],
@@ -187,30 +191,32 @@ export function Sudoku() {
   // keyboard input
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (session.paused) return
-      const a = document.activeElement
-      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
-      if (!selected) return
-      const { r, c } = selected
-      if (e.key >= '1' && e.key <= '9') {
-        setValue(r, c, parseInt(e.key, 10))
-        e.preventDefault()
-      } else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') {
-        setValue(r, c, 0)
-        e.preventDefault()
-      } else if (e.key === 'ArrowUp') {
-        setSelected({ r: Math.max(0, r - 1), c })
-        e.preventDefault()
-      } else if (e.key === 'ArrowDown') {
-        setSelected({ r: Math.min(8, r + 1), c })
-        e.preventDefault()
-      } else if (e.key === 'ArrowLeft') {
-        setSelected({ r, c: Math.max(0, c - 1) })
-        e.preventDefault()
-      } else if (e.key === 'ArrowRight') {
-        setSelected({ r, c: Math.min(8, c + 1) })
-        e.preventDefault()
-      }
+      return session.guard(() => {
+        if (session.paused) return
+        const a = document.activeElement
+        if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+        if (!selected) return
+        const { r, c } = selected
+        if (e.key >= '1' && e.key <= '9') {
+          setValue(r, c, parseInt(e.key, 10))
+          e.preventDefault()
+        } else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') {
+          setValue(r, c, 0)
+          e.preventDefault()
+        } else if (e.key === 'ArrowUp') {
+          setSelected({ r: Math.max(0, r - 1), c })
+          e.preventDefault()
+        } else if (e.key === 'ArrowDown') {
+          setSelected({ r: Math.min(8, r + 1), c })
+          e.preventDefault()
+        } else if (e.key === 'ArrowLeft') {
+          setSelected({ r, c: Math.max(0, c - 1) })
+          e.preventDefault()
+        } else if (e.key === 'ArrowRight') {
+          setSelected({ r, c: Math.min(8, c + 1) })
+          e.preventDefault()
+        }
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

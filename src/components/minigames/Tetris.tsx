@@ -1,5 +1,5 @@
-import { useGameSession } from './GameSession'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
+import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
@@ -174,139 +174,155 @@ export function Tetris() {
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nextRef = useRef<HTMLCanvasElement>(null)
-  const stateRef = useRef<GameState>(initialState())
+  const stateRef = useGameRef<GameState>('engine', initialState)
   const elapsedRef = useRef(0)
-  const [score, setScore] = useState(0)
-  const [lines, setLines] = useState(0)
-  const [level, setLevel] = useState(1)
-  const [over, setOver] = useState(false)
+  const [score, setScore] = useGameState('score', 0)
+  const [lines, setLines] = useGameState('lines', 0)
+  const [level, setLevel] = useGameState('level', 1)
+  const [over, setOver] = useGameState('over', false)
   const paused = session.paused
-  const [running, setRunning] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
+  const [running, setRunning] = useGameState('running', false)
+  const [elapsed, setElapsed] = useGameState('elapsed', 0)
   const highScore = useMinigameStore((s) => s.highScores.tetris)
   const recordScore = useMinigameStore((s) => s.recordScore)
 
   const start = useCallback(() => {
-    stateRef.current = initialState()
-    setScore(0)
-    setLines(0)
-    setLevel(1)
-    setElapsed(0)
-    setOver(false)
-    session.setPaused(false)
-    setRunning(true)
+    return session.guard(() => {
+      stateRef.current = initialState()
+      setScore(0)
+      setLines(0)
+      setLevel(1)
+      setElapsed(0)
+      setOver(false)
+      session.setPaused(false)
+      setRunning(true)
+    })
   }, [])
 
   const togglePause = useCallback(() => {
-    if (!running) return
-    session.setPaused(!session.paused)
+    return session.guard(() => {
+      if (!running) return
+      session.setPaused(!session.paused)
+    })
   }, [running])
 
   const tryMove = useCallback((dx: number, dy: number) => {
-    const st = stateRef.current
-    if (st.over || session.paused) return false
-    if (!collides(st.board, st.active, dx, dy)) {
-      st.active = { ...st.active, x: st.active.x + dx, y: st.active.y + dy }
-      return true
-    }
-    return false
+    return session.guard(() => {
+      const st = stateRef.current
+      if (st.over || session.paused) return false
+      if (!collides(st.board, st.active, dx, dy)) {
+        st.active = { ...st.active, x: st.active.x + dx, y: st.active.y + dy }
+        return true
+      }
+      return false
+    })
   }, [])
 
   const rotate = useCallback(() => {
-    const st = stateRef.current
-    if (st.over || session.paused) return
-    const next = rotateCW(st.active.shape)
-    // wall kicks: try offsets 0, -1, 1, -2, 2
-    for (const dx of [0, -1, 1, -2, 2]) {
-      if (!collides(st.board, st.active, dx, 0, next)) {
-        st.active = { ...st.active, shape: next, x: st.active.x + dx }
-        return
+    return session.guard(() => {
+      const st = stateRef.current
+      if (st.over || session.paused) return
+      const next = rotateCW(st.active.shape)
+      // wall kicks: try offsets 0, -1, 1, -2, 2
+      for (const dx of [0, -1, 1, -2, 2]) {
+        if (!collides(st.board, st.active, dx, 0, next)) {
+          st.active = { ...st.active, shape: next, x: st.active.x + dx }
+          return
+        }
       }
-    }
+    })
   }, [])
 
   const lockPiece = useCallback(() => {
-    const st = stateRef.current
-    st.board = mergePiece(st.board, st.active)
-    const { board: nb, cleared } = clearLines(st.board)
-    st.board = nb
-    if (cleared > 0) {
-      st.score += SCORE_TABLE[cleared] * st.level
-      st.lines += cleared
-      st.level = Math.floor(st.lines / 10) + 1
-      setScore(st.score)
-      setLines(st.lines)
-      setLevel(st.level)
-    }
-    // spawn next
-    const nextActive = newPiece(st.next)
-    st.next = randType()
-    if (collides(st.board, nextActive)) {
-      st.over = true
-      setOver(true)
-      setRunning(false)
-      recordScore('tetris', st.score)
-      return
-    }
-    st.active = nextActive
+    return session.guard(() => {
+      const st = stateRef.current
+      st.board = mergePiece(st.board, st.active)
+      const { board: nb, cleared } = clearLines(st.board)
+      st.board = nb
+      if (cleared > 0) {
+        st.score += SCORE_TABLE[cleared] * st.level
+        st.lines += cleared
+        st.level = Math.floor(st.lines / 10) + 1
+        setScore(st.score)
+        setLines(st.lines)
+        setLevel(st.level)
+      }
+      // spawn next
+      const nextActive = newPiece(st.next)
+      st.next = randType()
+      if (collides(st.board, nextActive)) {
+        st.over = true
+        setOver(true)
+        setRunning(false)
+        recordScore('tetris', st.score)
+        return
+      }
+      st.active = nextActive
+    })
   }, [recordScore])
 
   const softDrop = useCallback(() => {
-    if (session.paused) return
-    if (!tryMove(0, 1)) lockPiece()
+    return session.guard(() => {
+      if (session.paused) return
+      if (!tryMove(0, 1)) lockPiece()
+    })
   }, [tryMove, lockPiece])
 
   const hardDrop = useCallback(() => {
-    if (session.paused) return
-    while (tryMove(0, 1)) {
-      stateRef.current.score += 2
-    }
-    setScore(stateRef.current.score)
-    lockPiece()
+    return session.guard(() => {
+      if (session.paused) return
+      while (tryMove(0, 1)) {
+        stateRef.current.score += 2
+      }
+      setScore(stateRef.current.score)
+      lockPiece()
+    })
   }, [tryMove, lockPiece])
 
   // keyboard
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!session.visible || (session.paused && e.key.toLowerCase() !== 'p')) return
-      const a = document.activeElement
-      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
-      if (!running) return
-      switch (e.key) {
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          tryMove(-1, 0)
-          e.preventDefault()
-          break
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          tryMove(1, 0)
-          e.preventDefault()
-          break
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          softDrop()
-          e.preventDefault()
-          break
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          rotate()
-          e.preventDefault()
-          break
-        case ' ':
-          hardDrop()
-          e.preventDefault()
-          break
-        case 'p':
-        case 'P':
-          togglePause()
-          e.preventDefault()
-          break
-      }
+      return session.guard(() => {
+        if (!session.visible || (session.paused && e.key.toLowerCase() !== 'p')) return
+        const a = document.activeElement
+        if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+        if (!running) return
+        switch (e.key) {
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+            tryMove(-1, 0)
+            e.preventDefault()
+            break
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            tryMove(1, 0)
+            e.preventDefault()
+            break
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            softDrop()
+            e.preventDefault()
+            break
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+            rotate()
+            e.preventDefault()
+            break
+          case ' ':
+            hardDrop()
+            e.preventDefault()
+            break
+          case 'p':
+          case 'P':
+            togglePause()
+            e.preventDefault()
+            break
+        }
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -425,8 +441,8 @@ export function Tetris() {
         }
       }
     }
-    let pauseVersion = session.pauseVersion
-    const loop = (t: number) => {
+    let pauseVersion = -1
+    const loop = (t: number) => session.guard(() => {
       const st = stateRef.current
       if (pauseVersion !== session.pauseVersion) {
         st.lastDrop = t
@@ -436,6 +452,7 @@ export function Tetris() {
       if (session.paused) {
         st.lastDrop = t
         st.startTime = t - st.elapsedMs
+        drawBoard()
         raf = requestAnimationFrame(loop)
         return
       }
@@ -463,7 +480,7 @@ export function Tetris() {
       }
       drawBoard()
       if (!stateRef.current.over) raf = requestAnimationFrame(loop)
-    }
+    })
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [running, tryMove, lockPiece])

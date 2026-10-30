@@ -1,4 +1,4 @@
-import { useGameSession } from './GameSession'
+import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw, Upload, X, Trophy, Sparkles, Check, Sun, Moon, Orbit, Palmtree, Sunset } from 'lucide-react'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
@@ -57,20 +57,20 @@ export function FlappyBird() {
   const customImgRef = useRef<HTMLImageElement | null>(null)
   const customUrlRef = useRef<string | null>(null)
   const [hasCustom, setHasCustom] = useState(false)
-  const stateRef = useRef<GameState | null>(null)
+  const stateRef = useGameRef<GameState | null>('engine', null)
   if (!stateRef.current) stateRef.current = initial(useMinigameStore.getState().highScores.flappy)
   const sparksRef = useRef<Spark[]>([])
   const uploadVersion = useRef(0)
-  const [flying, setFlying] = useState(false)
-  const [recordBroken, setRecordBroken] = useState(false)
-  const [playerName, setPlayerName] = useState('')
-  const [recordSaved, setRecordSaved] = useState(false)
+  const [flying, setFlying] = useGameState('flying', false)
+  const [recordBroken, setRecordBroken] = useGameState('recordBroken', false)
+  const [playerName, setPlayerName] = useGameState('playerName', '')
+  const [recordSaved, setRecordSaved] = useGameState('recordSaved', false)
   const [saveError, setSaveError] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(false)
-  const [score, setScore] = useState(0)
-  const [over, setOver] = useState(false)
-  const [running, setRunning] = useState(true)
+  const [score, setScore] = useGameState('score', 0)
+  const [over, setOver] = useGameState('over', false)
+  const [running, setRunning] = useGameState('running', true)
   const highScore = useMinigameStore((s) => s.highScores.flappy)
   const recordScore = useMinigameStore((s) => s.recordScore)
   const record = useMinigameStore((s) => s.flappyRecord)
@@ -82,21 +82,25 @@ export function FlappyBird() {
   const claimRecord = useMinigameStore((s) => s.claimFlappyRecord)
 
   const flap = useCallback(() => {
-    if (session.paused || !running || imageLoading) return
-    flapBird(stateRef.current!)
-    if (!stateRef.current!.over) setFlying(true)
+    return session.guard(() => {
+      if (session.paused || !running || imageLoading) return
+      flapBird(stateRef.current!)
+      if (!stateRef.current!.over) setFlying(true)
+    })
   }, [running, imageLoading])
 
   const start = useCallback(() => {
-    stateRef.current = initial(useMinigameStore.getState().highScores.flappy, stateRef.current!.width)
-    sparksRef.current = []
-    setScore(0)
-    setOver(false)
-    setFlying(false)
-    setRecordBroken(false)
-    setRecordSaved(false)
-    setSaveError(false)
-    setRunning(true)
+    return session.guard(() => {
+      stateRef.current = initial(useMinigameStore.getState().highScores.flappy, stateRef.current!.width)
+      sparksRef.current = []
+      setScore(0)
+      setOver(false)
+      setFlying(false)
+      setRecordBroken(false)
+      setRecordSaved(false)
+      setSaveError(false)
+      setRunning(true)
+    })
   }, [])
 
   useEffect(() => {
@@ -187,12 +191,14 @@ export function FlappyBird() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (session.paused) return
-      const active = document.activeElement
-      if (e.repeat || (active instanceof HTMLElement && active.closest('input, textarea, button, [contenteditable=true]'))) return
-      if (e.key !== ' ' && e.key !== 'Spacebar') return
-      e.preventDefault()
-      flap()
+      return session.guard(() => {
+        if (session.paused) return
+        const active = document.activeElement
+        if (e.repeat || (active instanceof HTMLElement && active.closest('input, textarea, button, [contenteditable=true]'))) return
+        if (e.key !== ' ' && e.key !== 'Spacebar') return
+        e.preventDefault()
+        flap()
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -202,7 +208,8 @@ export function FlappyBird() {
     const canvas = canvasRef.current
     if (!canvas) return
     const fit = () => {
-      const { width, height } = canvas.getBoundingClientRect()
+      const width = canvas.clientWidth
+      const height = canvas.clientHeight
       if (!width || !height) return
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas.width = Math.round(width * dpr)
@@ -272,11 +279,11 @@ export function FlappyBird() {
     }
 
     let last = performance.now()
-    const loop = (now: number) => {
+    const loop = (now: number) => session.guard(() => {
       const delta = document.hidden ? 0 : Math.min(40, now - last)
       const dt = delta / (1000 / 60)
       last = now
-      if (session.paused) { raf = requestAnimationFrame(loop); return }
+      if (session.paused) { draw(); raf = requestAnimationFrame(loop); return }
       const st = stateRef.current!
       const previousScore = st.score
       const wasRecord = st.recordBroken
@@ -304,7 +311,7 @@ export function FlappyBird() {
       sparksRef.current = sparksRef.current.filter((p) => p.life > 0)
       draw()
       raf = requestAnimationFrame(loop)
-    }
+    })
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [running, recordScore, selectedBird, environment])

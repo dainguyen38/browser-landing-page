@@ -1,5 +1,5 @@
-import { useGameSession } from './GameSession'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useGameSession, useGameState } from './GameSession'
+import { useCallback, useEffect, useRef } from 'react'
 import { RotateCcw, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
@@ -147,15 +147,15 @@ function loadCell(): number {
 export function Game2048() {
   const session = useGameSession()
   const { t } = useT()
-  const [board, setBoard] = useState<Board>(newGame)
-  const [score, setScore] = useState(0)
-  const [over, setOver] = useState(false)
-  const [won, setWon] = useState(false)
-  const [keepGoing, setKeepGoing] = useState(false)
+  const [board, setBoard] = useGameState<Board>('board', newGame)
+  const [score, setScore] = useGameState('score', 0)
+  const [over, setOver] = useGameState('over', false)
+  const [won, setWon] = useGameState('won', false)
+  const [keepGoing, setKeepGoing] = useGameState('keepGoing', false)
   const high = useMinigameStore((s) => s.highScores.g2048)
   const record = useMinigameStore((s) => s.recordScore)
   const touchStart = useRef<{ x: number; y: number } | null>(null)
-  const [cellSize, setCellSize] = useState<number>(loadCell)
+  const [cellSize, setCellSize] = useGameState<number>('cellSize', loadCell)
 
   const setCell = (n: number) => {
     const v = Math.max(MIN_CELL, Math.min(MAX_CELL, n))
@@ -171,45 +171,49 @@ export function Game2048() {
 
   const doMove = useCallback(
     (dir: Dir) => {
-      if (session.paused || over) return
-      const { board: nb, gained, changed } = move(board, dir)
-      if (!changed) return
-      const withTile = spawn(nb)
-      const newScore = score + gained
-      setBoard(withTile)
-      setScore(newScore)
-      if (!won && hasValue(withTile, 2048)) setWon(true)
-      if (isGameOver(withTile)) {
-        setOver(true)
-        record('g2048', newScore)
-      }
+      return session.guard(() => {
+        if (session.paused || over) return
+        const { board: nb, gained, changed } = move(board, dir)
+        if (!changed) return
+        const withTile = spawn(nb)
+        const newScore = score + gained
+        setBoard(withTile)
+        setScore(newScore)
+        if (!won && hasValue(withTile, 2048)) setWon(true)
+        if (isGameOver(withTile)) {
+          setOver(true)
+          record('g2048', newScore)
+        }
+      })
     },
     [board, score, over, won, record],
   )
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (session.paused) return
-      const active = document.activeElement
-      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
-      const map: Record<string, Dir> = {
-        ArrowUp: 'up',
-        ArrowDown: 'down',
-        ArrowLeft: 'left',
-        ArrowRight: 'right',
-        w: 'up',
-        s: 'down',
-        a: 'left',
-        d: 'right',
-        W: 'up',
-        S: 'down',
-        A: 'left',
-        D: 'right',
-      }
-      const dir = map[e.key]
-      if (!dir) return
-      e.preventDefault()
-      doMove(dir)
+      return session.guard(() => {
+        if (session.paused) return
+        const active = document.activeElement
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+        const map: Record<string, Dir> = {
+          ArrowUp: 'up',
+          ArrowDown: 'down',
+          ArrowLeft: 'left',
+          ArrowRight: 'right',
+          w: 'up',
+          s: 'down',
+          a: 'left',
+          d: 'right',
+          W: 'up',
+          S: 'down',
+          A: 'left',
+          D: 'right',
+        }
+        const dir = map[e.key]
+        if (!dir) return
+        e.preventDefault()
+        doMove(dir)
+      })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

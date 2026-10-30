@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, X, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, X, RotateCcw, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GameSessionContext, type GameSession } from '@/components/minigames/GameSession'
+import { GameSessionContext, GameErrorBoundary, createGameSession, type GameSession } from '@/components/minigames/GameSession'
+import { newSnapshot, validSnapshot } from '@/lib/minigame/snapshot'
 import { GlassCard } from '@/components/layout/GlassCard'
 import {
   Dialog,
@@ -94,48 +94,63 @@ export function MinigameWidget() {
   const [active, setActive] = useState<GameKey | null>(null)
   const [paused, setPaused] = useState(false)
   const hostRef = useRef<HTMLDivElement>(null)
-  const parkingRef = useRef<HTMLDivElement>(null)
   const resumeRef = useRef<HTMLButtonElement>(null)
-  const sessions = useRef(new Map<GameKey, { container: HTMLDivElement; control: GameSession }>())
+  const sessions = useRef(new Map<GameKey, GameSession>())
+  const [fault, setFault] = useState(false)
+  const [generation, setGeneration] = useState(0)
 
   const openGame = (game: GameKey) => {
-    if (!sessions.current.has(game)) {
-      const container = document.createElement('div')
-      container.className = 'h-full w-full min-h-0'
-      const control: GameSession = {
-        paused: false,
-        visible: true,
-        pauseVersion: 0,
-        setPaused: (value) => {
-          if (control.paused !== value) control.pauseVersion++
-          control.paused = value
-          setPaused(value)
-        },
-      }
-      sessions.current.set(game, { container, control })
+    const cached = sessions.current.get(game)
+    if (!cached || !cached.snapshot || typeof cached.fail !== 'function' || typeof cached.guard !== 'function' || !(cached.assets instanceof Map)) {
+      const control = createGameSession(game, (current) => {
+        setPaused(current.paused)
+        setFault(current.error)
+      })
+      if (cached) { control.error = true; control.paused = true }
+      sessions.current.set(game, control)
+    } else {
+      const control = sessions.current.get(game)!
+      if (!validSnapshot(game, control.snapshot)) control.fail(new Error('Invalid game snapshot'))
     }
     const session = sessions.current.get(game)!
-    session.control.visible = true
-    setPaused(session.control.paused)
+    session.visible = true
+    setPaused(session.paused)
+    setFault(session.error)
     setActive(game)
   }
 
   const closeGame = () => {
     if (active) {
       const session = sessions.current.get(active)!
-      session.control.setPaused(true)
-      session.control.visible = false
+      session.setPaused(true)
+      session.visible = false
+      if (validSnapshot(active, session.snapshot)) {
+        session.snapshot = JSON.parse(JSON.stringify(session.snapshot))
+      } else session.fail(new Error('Invalid game snapshot'))
     }
     setActive(null)
   }
 
-  // Keep each portal target stable so closing or switching dialogs preserves React state and refs.
-  useLayoutEffect(() => {
-    for (const [game, session] of sessions.current) {
-      const parent = game === active ? hostRef.current : parkingRef.current
-      parent?.appendChild(session.container)
+  const resumeGame = () => {
+    if (!active) return
+    const session = sessions.current.get(active)!
+    if (!validSnapshot(active, session.snapshot)) {
+      session.fail(new Error('Invalid game snapshot'))
+      return
     }
-  }, [active])
+    session.setPaused(false)
+    requestAnimationFrame(() => hostRef.current?.querySelector<HTMLCanvasElement>('canvas[tabindex]')?.focus())
+  }
+
+  const restartGame = () => {
+    if (!active) return
+    const session = sessions.current.get(active)!
+    session.snapshot = newSnapshot(active)
+    session.error = false
+    session.setPaused(false)
+    setFault(false)
+    setGeneration((value) => value + 1)
+  }
 
   useLayoutEffect(() => {
     if (hostRef.current) hostRef.current.inert = paused
@@ -163,23 +178,13 @@ export function MinigameWidget() {
           ))}
         </div>
       </GlassCard>
-      <div ref={parkingRef} hidden aria-hidden="true" />
-      {GAMES.filter((game) => sessions.current.has(game.key)).map((game) => {
-        const session = sessions.current.get(game.key)!
-        return createPortal(
-          <GameSessionContext.Provider value={session.control}><game.Component /></GameSessionContext.Provider>,
-          session.container,
-          game.key,
-        )
-      })}
-
       <Dialog open={!!active} onOpenChange={(open) => !open && closeGame()}>
         <DialogContent
           onEscapeKeyDown={(event) => {
             if (event.repeat) { event.preventDefault(); return }
-            if (active && !sessions.current.get(active)!.control.paused) {
+            if (active && !sessions.current.get(active)!.paused) {
               event.preventDefault()
-              sessions.current.get(active)!.control.setPaused(true)
+              sessions.current.get(active)!.setPaused(true)
             }
           }}
           className={active === 'flappy'
@@ -203,14 +208,19 @@ export function MinigameWidget() {
               {activeGame && t(`minigame.games.${activeGame.key}`)}
             </DialogTitle>
           </DialogHeader>
-          <div ref={hostRef} className={`min-h-0 flex flex-col ${active === 'flappy' || active === 'snake' ? 'h-full w-full' : ''}`} />
-          {paused && <div className="absolute inset-0 z-40 flex items-center justify-center rounded-2xl bg-slate-950/70 p-4 backdrop-blur-md">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div role="status" className="text-2xl font-bold text-white">{t('minigame.paused')}</div>
-              <Button ref={resumeRef} className="h-12 rounded-xl px-8" onClick={() => {
-                if (active) sessions.current.get(active)!.control.setPaused(false)
-                if (active === 'flappy') document.getElementById('flappy-canvas')?.focus()
-              }}><Play className="h-5 w-5" />{t('minigame.resume')}</Button>
+          <div ref={hostRef} className={`min-h-0 flex flex-col ${active === 'flappy' || active === 'snake' ? 'h-full w-full' : ''}`}>
+            {activeGame && active && !fault && <GameSessionContext.Provider value={sessions.current.get(active)!}>
+              <GameErrorBoundary key={`${active}:${generation}`} session={sessions.current.get(active)!}>
+                <activeGame.Component />
+              </GameErrorBoundary>
+            </GameSessionContext.Provider>}
+          </div>
+          {(paused || fault) && <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto rounded-2xl bg-slate-950/80 p-4 backdrop-blur-md">
+            <div className="m-auto flex max-w-sm flex-col items-center gap-4 text-center">
+              <div role={fault ? 'alert' : 'status'} className="text-2xl font-bold text-white">{t(fault ? 'minigame.resumeFailed' : 'minigame.paused')}</div>
+              {fault && <p className="text-sm leading-relaxed text-white/70">{t('minigame.resumeFailedHint')}</p>}
+              {!fault && <Button ref={resumeRef} className="h-12 rounded-xl px-8" onClick={resumeGame}><Play className="h-5 w-5" />{t('minigame.resume')}</Button>}
+              <Button ref={fault ? resumeRef : undefined} variant={fault ? 'default' : 'secondary'} className="h-11 rounded-xl px-6" onClick={restartGame}><RotateCcw className="h-4 w-4" />{t('minigame.newGame')}</Button>
               <Button variant="ghost" className="h-11 rounded-xl" onClick={closeGame}><X className="h-4 w-4" />{t('minigame.closeGame')}</Button>
             </div>
           </div>}
