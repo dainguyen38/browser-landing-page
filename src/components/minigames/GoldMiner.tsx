@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -126,6 +127,7 @@ function initial(level = 1, prevScore = 0): GameState {
 }
 
 export function GoldMiner() {
+  const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<GameState>(initial())
@@ -171,12 +173,13 @@ export function GoldMiner() {
 
   const dropClaw = useCallback(() => {
     const st = stateRef.current
-    if (st.clawState !== 'swing' || st.over) return
+    if (session.paused || st.clawState !== 'swing' || st.over) return
     st.clawState = 'descend'
   }, [])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (session.paused) return
       const a = document.activeElement
       if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
       if (!running) return
@@ -322,6 +325,7 @@ export function GoldMiner() {
     const loop = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000)
       last = t
+      if (session.paused) { raf = requestAnimationFrame(loop); return }
       update(dt)
       draw()
       if (!stateRef.current.over && !stateRef.current.won) raf = requestAnimationFrame(loop)

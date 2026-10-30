@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RotateCcw, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -144,6 +145,7 @@ function loadCell(): number {
 }
 
 export function Game2048() {
+  const session = useGameSession()
   const { t } = useT()
   const [board, setBoard] = useState<Board>(newGame)
   const [score, setScore] = useState(0)
@@ -169,7 +171,7 @@ export function Game2048() {
 
   const doMove = useCallback(
     (dir: Dir) => {
-      if (over) return
+      if (session.paused || over) return
       const { board: nb, gained, changed } = move(board, dir)
       if (!changed) return
       const withTile = spawn(nb)
@@ -187,6 +189,7 @@ export function Game2048() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (session.paused) return
       const active = document.activeElement
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
       const map: Record<string, Dir> = {

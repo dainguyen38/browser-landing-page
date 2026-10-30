@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RotateCcw, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -119,6 +120,7 @@ function formatTime(sec: number): string {
 const DIFFICULTY_BONUS: Record<Difficulty, number> = { easy: 100, medium: 250, hard: 500 }
 
 export function Sudoku() {
+  const session = useGameSession()
   const { t } = useT()
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
   const initialPuzzle = useMemo(() => generate('easy'), [])
@@ -152,7 +154,7 @@ export function Sudoku() {
   // timer
   useEffect(() => {
     if (!running || solved) return
-    const id = window.setInterval(() => setSeconds((s) => s + 1), 1000)
+    const id = window.setInterval(() => { if (!session.paused) setSeconds((s) => s + 1) }, 1000)
     return () => window.clearInterval(id)
   }, [running, solved])
 
@@ -171,6 +173,7 @@ export function Sudoku() {
 
   const setValue = useCallback(
     (r: number, c: number, v: number) => {
+      if (session.paused) return
       setBoard((prev) => {
         if (prev[r][c].fixed) return prev
         const next = prev.map((row) => row.map((cell) => ({ ...cell })))
@@ -184,6 +187,7 @@ export function Sudoku() {
   // keyboard input
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (session.paused) return
       const a = document.activeElement
       if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
       if (!selected) return

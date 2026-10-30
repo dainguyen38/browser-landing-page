@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,7 @@ function initial(): GameState {
 }
 
 export function DinoGame() {
+  const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<GameState>(initial())
@@ -80,6 +82,7 @@ export function DinoGame() {
   const recordScore = useMinigameStore((s) => s.recordScore)
 
   const jump = useCallback(() => {
+    if (session.paused) return
     const st = stateRef.current
     if (!running || st.over) return
     if (st.dinoY >= GROUND_Y - 44 - 0.5) {
@@ -105,6 +108,7 @@ export function DinoGame() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (session.paused) return
       const a = document.activeElement
       if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
@@ -402,6 +406,7 @@ export function DinoGame() {
     const loop = (t: number) => {
       const dt = Math.min(2.5, (t - last) / (1000 / 60))
       last = t
+      if (session.paused) { raf = requestAnimationFrame(loop); return }
       if (running) update(dt)
       draw()
       raf = requestAnimationFrame(loop)

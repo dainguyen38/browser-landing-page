@@ -318,3 +318,20 @@ test('only bonus fruit pulses; drawing never changes its hitbox or displays coun
     assert.deepEqual(fruit, copy)
   }
 })
+
+test('the board fits phone, landscape, desktop, and zero-size containers without distortion or overflow', async () => {
+  const source = readFileSync(new URL('../src/lib/snake/layout.ts', import.meta.url), 'utf8')
+  const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } })
+  const { fitBoard } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
+  for (const [width, height] of [[291, 260], [343, 430], [460, 210], [900, 610], [0, 0], [320, 0]]) {
+    for (const { cols, rows } of Object.values(BOARD_SIZES)) {
+      const fitted = fitBoard(width, height, cols, rows)
+      assert.ok(fitted.width >= 0 && fitted.width <= width + 1e-8)
+      assert.ok(fitted.height >= 0 && fitted.height <= height + 1e-8)
+      if (width && height) {
+        assert.ok(Math.abs(fitted.width / fitted.height - cols / rows) < 1e-8)
+        assert.ok(Math.abs(fitted.width - width) < 1e-8 || Math.abs(fitted.height - height) < 1e-8)
+      }
+    }
+  }
+})

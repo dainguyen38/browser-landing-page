@@ -221,6 +221,7 @@ const en = {
     score: 'Score',
     best: 'Best',
     newBest: 'New best',
+    closeGame: 'Close · keep game',
     paused: 'Paused',
     pause: 'Pause',
     resume: 'Resume',
@@ -239,6 +240,7 @@ const en = {
     errors: 'Errors',
     sudokuWin: 'Solved!',
     snakeOptions: {
+      settings: 'Settings', done: 'Done', controls: 'Snake controls', up: 'Up', down: 'Down', left: 'Left', right: 'Right',
       difficulty: 'Speed', speedMode: 'Acceleration', arena: 'Mode', size: 'Size', style: 'Style',
       easy: 'Slow', medium: 'Normal', hard: 'Fast',
       constant: 'Off', capped: 'Capped', endless: 'Endless',
@@ -290,6 +292,7 @@ const en = {
     mistakes: 'Mistakes',
     lives: 'Lives',
     start: 'Start',
+    closeGame: 'Close · keep game',
     paused: 'Paused',
     resume: 'Resume',
     playAgain: 'Play again',

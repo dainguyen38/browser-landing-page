@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -150,7 +151,6 @@ type GameState = {
   startTime: number
   elapsedMs: number
   over: boolean
-  paused: boolean
 }
 
 function initialState(): GameState {
@@ -166,11 +166,11 @@ function initialState(): GameState {
     startTime: 0,
     elapsedMs: 0,
     over: false,
-    paused: false,
   }
 }
 
 export function Tetris() {
+  const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nextRef = useRef<HTMLCanvasElement>(null)
@@ -180,7 +180,7 @@ export function Tetris() {
   const [lines, setLines] = useState(0)
   const [level, setLevel] = useState(1)
   const [over, setOver] = useState(false)
-  const [paused, setPaused] = useState(false)
+  const paused = session.paused
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const highScore = useMinigameStore((s) => s.highScores.tetris)
@@ -193,19 +193,18 @@ export function Tetris() {
     setLevel(1)
     setElapsed(0)
     setOver(false)
-    setPaused(false)
+    session.setPaused(false)
     setRunning(true)
   }, [])
 
   const togglePause = useCallback(() => {
     if (!running) return
-    stateRef.current.paused = !stateRef.current.paused
-    setPaused(stateRef.current.paused)
+    session.setPaused(!session.paused)
   }, [running])
 
   const tryMove = useCallback((dx: number, dy: number) => {
     const st = stateRef.current
-    if (st.over || st.paused) return false
+    if (st.over || session.paused) return false
     if (!collides(st.board, st.active, dx, dy)) {
       st.active = { ...st.active, x: st.active.x + dx, y: st.active.y + dy }
       return true
@@ -215,7 +214,7 @@ export function Tetris() {
 
   const rotate = useCallback(() => {
     const st = stateRef.current
-    if (st.over || st.paused) return
+    if (st.over || session.paused) return
     const next = rotateCW(st.active.shape)
     // wall kicks: try offsets 0, -1, 1, -2, 2
     for (const dx of [0, -1, 1, -2, 2]) {
@@ -253,10 +252,12 @@ export function Tetris() {
   }, [recordScore])
 
   const softDrop = useCallback(() => {
+    if (session.paused) return
     if (!tryMove(0, 1)) lockPiece()
   }, [tryMove, lockPiece])
 
   const hardDrop = useCallback(() => {
+    if (session.paused) return
     while (tryMove(0, 1)) {
       stateRef.current.score += 2
     }
@@ -267,6 +268,7 @@ export function Tetris() {
   // keyboard
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (!session.visible || (session.paused && e.key.toLowerCase() !== 'p')) return
       const a = document.activeElement
       if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
       if (!running) return
@@ -423,9 +425,21 @@ export function Tetris() {
         }
       }
     }
+    let pauseVersion = session.pauseVersion
     const loop = (t: number) => {
       const st = stateRef.current
-      if (!st.over && !st.paused) {
+      if (pauseVersion !== session.pauseVersion) {
+        st.lastDrop = t
+        st.startTime = t - st.elapsedMs
+        pauseVersion = session.pauseVersion
+      }
+      if (session.paused) {
+        st.lastDrop = t
+        st.startTime = t - st.elapsedMs
+        raf = requestAnimationFrame(loop)
+        return
+      }
+      if (!st.over) {
         if (!st.lastDrop) {
           st.lastDrop = t
           st.startTime = t

@@ -1,5 +1,8 @@
-import { useState } from 'react'
-import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, type LucideIcon } from 'lucide-react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, X, type LucideIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { GameSessionContext, type GameSession } from '@/components/minigames/GameSession'
 import { GlassCard } from '@/components/layout/GlassCard'
 import {
   Dialog,
@@ -89,9 +92,57 @@ const GAMES: GameDef[] = [
 export function MinigameWidget() {
   const { t } = useT()
   const [active, setActive] = useState<GameKey | null>(null)
+  const [paused, setPaused] = useState(false)
+  const hostRef = useRef<HTMLDivElement>(null)
+  const parkingRef = useRef<HTMLDivElement>(null)
+  const resumeRef = useRef<HTMLButtonElement>(null)
+  const sessions = useRef(new Map<GameKey, { container: HTMLDivElement; control: GameSession }>())
+
+  const openGame = (game: GameKey) => {
+    if (!sessions.current.has(game)) {
+      const container = document.createElement('div')
+      container.className = 'h-full w-full min-h-0'
+      const control: GameSession = {
+        paused: false,
+        visible: true,
+        pauseVersion: 0,
+        setPaused: (value) => {
+          if (control.paused !== value) control.pauseVersion++
+          control.paused = value
+          setPaused(value)
+        },
+      }
+      sessions.current.set(game, { container, control })
+    }
+    const session = sessions.current.get(game)!
+    session.control.visible = true
+    setPaused(session.control.paused)
+    setActive(game)
+  }
+
+  const closeGame = () => {
+    if (active) {
+      const session = sessions.current.get(active)!
+      session.control.setPaused(true)
+      session.control.visible = false
+    }
+    setActive(null)
+  }
+
+  // Keep each portal target stable so closing or switching dialogs preserves React state and refs.
+  useLayoutEffect(() => {
+    for (const [game, session] of sessions.current) {
+      const parent = game === active ? hostRef.current : parkingRef.current
+      parent?.appendChild(session.container)
+    }
+  }, [active])
+
+  useLayoutEffect(() => {
+    if (hostRef.current) hostRef.current.inert = paused
+    if (paused) resumeRef.current?.focus()
+  }, [active, paused])
 
   const activeGame = active ? GAMES.find((g) => g.key === active) : null
-  const ActiveComp = activeGame?.Component
 
   return (
     <>
@@ -108,30 +159,61 @@ export function MinigameWidget() {
           style={{ gridTemplateColumns: 'repeat(auto-fit, 96px)' }}
         >
           {GAMES.map((g) => (
-            <GameTile key={g.key} def={g} onPlay={() => setActive(g.key)} />
+            <GameTile key={g.key} def={g} onPlay={() => openGame(g.key)} />
           ))}
         </div>
       </GlassCard>
+      <div ref={parkingRef} hidden aria-hidden="true" />
+      {GAMES.filter((game) => sessions.current.has(game.key)).map((game) => {
+        const session = sessions.current.get(game.key)!
+        return createPortal(
+          <GameSessionContext.Provider value={session.control}><game.Component /></GameSessionContext.Provider>,
+          session.container,
+          game.key,
+        )
+      })}
 
-      <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
+      <Dialog open={!!active} onOpenChange={(open) => !open && closeGame()}>
         <DialogContent
+          onEscapeKeyDown={(event) => {
+            if (event.repeat) { event.preventDefault(); return }
+            if (active && !sessions.current.get(active)!.control.paused) {
+              event.preventDefault()
+              sessions.current.get(active)!.control.setPaused(true)
+            }
+          }}
           className={active === 'flappy'
             ? 'w-[96vw] max-w-[1120px] h-[min(92dvh,760px)] max-h-[92dvh] overflow-hidden rounded-2xl border-white/15 p-0 gap-0 [&>button:last-child]:z-30 [&>button:last-child]:rounded-full [&>button:last-child]:bg-slate-950/40 [&>button:last-child]:p-2 [&>button:last-child]:text-white'
-            : `max-w-3xl w-[min(95vw,720px)] max-h-[95vh] p-5 ${active === 'snake' ? 'overflow-y-auto' : 'overflow-hidden'}`}
+            : active === 'snake'
+              ? 'w-[96vw] max-w-[960px] h-[min(94dvh,800px)] max-h-[94dvh] overflow-hidden rounded-2xl p-0 gap-0 [&>button:last-child]:z-30 [&>button:last-child]:rounded-full [&>button:last-child]:bg-slate-950/50 [&>button:last-child]:p-2'
+              : 'max-w-3xl w-[min(95vw,720px)] max-h-[95vh] overflow-hidden p-5'}
           onOpenAutoFocus={(event) => {
-            if (active === 'flappy') {
+            if (paused) {
+              event.preventDefault()
+              resumeRef.current?.focus()
+            } else if (active === 'flappy') {
               event.preventDefault()
               document.getElementById('flappy-canvas')?.focus({ preventScroll: true })
             }
           }}
         >
-          <DialogHeader className={active === 'flappy' ? 'sr-only' : undefined}>
+          <DialogHeader className={active === 'flappy' || active === 'snake' ? 'sr-only' : undefined}>
             <DialogTitle className="flex items-center gap-2">
               {activeGame && <activeGame.icon className={`h-5 w-5 ${activeGame.color}`} />}
               {activeGame && t(`minigame.games.${activeGame.key}`)}
             </DialogTitle>
           </DialogHeader>
-          <div className={`min-h-0 flex flex-col ${active === 'flappy' ? 'h-full w-full' : ''}`}>{ActiveComp && <ActiveComp />}</div>
+          <div ref={hostRef} className={`min-h-0 flex flex-col ${active === 'flappy' || active === 'snake' ? 'h-full w-full' : ''}`} />
+          {paused && <div className="absolute inset-0 z-40 flex items-center justify-center rounded-2xl bg-slate-950/70 p-4 backdrop-blur-md">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div role="status" className="text-2xl font-bold text-white">{t('minigame.paused')}</div>
+              <Button ref={resumeRef} className="h-12 rounded-xl px-8" onClick={() => {
+                if (active) sessions.current.get(active)!.control.setPaused(false)
+                if (active === 'flappy') document.getElementById('flappy-canvas')?.focus()
+              }}><Play className="h-5 w-5" />{t('minigame.resume')}</Button>
+              <Button variant="ghost" className="h-11 rounded-xl" onClick={closeGame}><X className="h-4 w-4" />{t('minigame.closeGame')}</Button>
+            </div>
+          </div>}
         </DialogContent>
       </Dialog>
     </>

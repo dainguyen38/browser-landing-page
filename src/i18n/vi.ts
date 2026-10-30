@@ -221,6 +221,7 @@ const vi: Dict = {
     score: 'Điểm',
     best: 'Cao nhất',
     newBest: 'Kỷ lục mới',
+    closeGame: 'Đóng · giữ ván chơi',
     paused: 'Tạm dừng',
     pause: 'Tạm dừng',
     resume: 'Tiếp tục',
@@ -239,6 +240,7 @@ const vi: Dict = {
     errors: 'Sai',
     sudokuWin: 'Giải xong!',
     snakeOptions: {
+      settings: 'Cấu hình', done: 'Xong', controls: 'Điều khiển rắn', up: 'Lên', down: 'Xuống', left: 'Trái', right: 'Phải',
       difficulty: 'Tốc độ', speedMode: 'Tăng tốc', arena: 'Chế độ', size: 'Kích thước', style: 'Kiểu rắn',
       easy: 'Chậm', medium: 'Vừa', hard: 'Nhanh',
       constant: 'Tắt', capped: 'Giới hạn', endless: 'Vô hạn',
@@ -290,6 +292,7 @@ const vi: Dict = {
     mistakes: 'Sai',
     lives: 'Mạng',
     start: 'Bắt đầu',
+    closeGame: 'Đóng · giữ ván chơi',
     paused: 'Tạm dừng',
     resume: 'Tiếp tục',
     playAgain: 'Chơi lại',

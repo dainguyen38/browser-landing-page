@@ -1,3 +1,4 @@
+import { useGameSession } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, RotateCcw, Upload, X, Trophy, Sparkles, Check, Sun, Moon, Orbit, Palmtree, Sunset } from 'lucide-react'
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval'
@@ -49,6 +50,7 @@ function BirdPreview({ bird }: { bird: BirdStyle }) {
 }
 
 export function FlappyBird() {
+  const session = useGameSession()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewportRef = useRef({ scale: 1, dpr: 1 })
@@ -80,7 +82,7 @@ export function FlappyBird() {
   const claimRecord = useMinigameStore((s) => s.claimFlappyRecord)
 
   const flap = useCallback(() => {
-    if (!running || imageLoading) return
+    if (session.paused || !running || imageLoading) return
     flapBird(stateRef.current!)
     if (!stateRef.current!.over) setFlying(true)
   }, [running, imageLoading])
@@ -185,6 +187,7 @@ export function FlappyBird() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (session.paused) return
       const active = document.activeElement
       if (e.repeat || (active instanceof HTMLElement && active.closest('input, textarea, button, [contenteditable=true]'))) return
       if (e.key !== ' ' && e.key !== 'Spacebar') return
@@ -273,6 +276,7 @@ export function FlappyBird() {
       const delta = document.hidden ? 0 : Math.min(40, now - last)
       const dt = delta / (1000 / 60)
       last = now
+      if (session.paused) { raf = requestAnimationFrame(loop); return }
       const st = stateRef.current!
       const previousScore = st.score
       const wasRecord = st.recordBroken
