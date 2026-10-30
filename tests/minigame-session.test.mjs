@@ -22,6 +22,7 @@ const entry = [
   ...Object.values(names).map((name) => `export { ${name} } from './src/components/minigames/${name}.tsx'`),
   "export * from './src/components/minigames/GameSession.tsx'",
   "export * from './src/lib/minigame/snapshot.ts'",
+  "export * from './src/lib/minigame/keyboard.ts'",
   "export { useMinigameStore } from './src/store/minigame.ts'",
   "export { step as snakeStep } from './src/lib/snake/game.ts'",
   "export { flap, update as flappyStep } from './src/lib/flappy/game.ts'",
@@ -41,6 +42,25 @@ function mount(game, control) {
   return renderToString(React.createElement(games.GameSessionContext.Provider, { value: control }, React.createElement(games[names[game]])))
 }
 const copy = (value) => JSON.parse(JSON.stringify(value))
+
+test('snake toggles pause with Space and closes with Esc; other games pause then close with Esc', () => {
+  let paused = false
+  for (const expected of ['pause', 'resume', 'pause']) {
+    const action = games.gameKeyAction('snake', paused, ' ')
+    assert.equal(action, expected)
+    paused = action === 'pause'
+  }
+  for (const paused of [false, true]) {
+    assert.equal(games.gameKeyAction('snake', paused, 'Escape'), 'close')
+    assert.equal(games.gameKeyAction('snake', paused, 'ArrowUp'), null)
+  }
+  for (const game of Object.keys(names).filter((game) => game !== 'snake')) {
+    assert.equal(games.gameKeyAction(game, false, 'Escape'), 'pause', game)
+    assert.equal(games.gameKeyAction(game, true, 'Escape'), 'close', game)
+    assert.equal(games.gameKeyAction(game, false, ' '), null, game)
+    assert.equal(games.gameKeyAction(game, true, ' '), null, game)
+  }
+})
 
 test('all seven actual game components restore the same versioned data into fresh React state', () => {
   for (const game of Object.keys(names)) {

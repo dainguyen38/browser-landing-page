@@ -254,7 +254,7 @@ const vi: Dict = {
       apple: 'Táo', coconut: 'Dừa', mango: 'Xoài', durian: 'Sầu riêng',
       won: 'Đã lấp đầy bản đồ!',
     },
-    snakeHint: 'Phím mũi tên / WASD · vuốt trên cảm ứng',
+    snakeHint: 'Mũi tên / WASD · vuốt để di chuyển · Space: dừng / tiếp tục · Esc: đóng',
     flappyOptions: {
       environment: 'Môi trường', day: 'Ban ngày', sunset: 'Hoàng hôn', night: 'Ban đêm', space: 'Vũ trụ', beach: 'Bãi biển',
       chooseBird: 'Chọn chim của bạn', canary: 'Chim vàng', bluejay: 'Giẻ cùi xanh', parrot: 'Vẹt',

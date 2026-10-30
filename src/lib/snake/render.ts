@@ -163,7 +163,7 @@ export function drawSnake(
 export function drawFruit(ctx: CanvasRenderingContext2D, fruit: Fruit, cell: number, time: number) {
   const bonus = fruit.kind !== 'apple'
   const pulse = bonus ? 1 + Math.sin(time / 180 + fruit.x * 0.6) * 0.14 : 1
-  const r = cell * (bonus ? 0.4 : 0.3) * pulse
+  const r = cell * (bonus ? 0.65 : 0.55) * pulse
   const x = (fruit.x + 0.5) * cell
   const y = (fruit.y + 0.5) * cell
   const color = { apple: '#f43f5e', coconut: '#a16207', mango: '#fbbf24', durian: '#a3e635' }[fruit.kind]

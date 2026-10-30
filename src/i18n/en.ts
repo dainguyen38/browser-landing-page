@@ -254,7 +254,7 @@ const en = {
       apple: 'Apple', coconut: 'Coconut', mango: 'Mango', durian: 'Durian',
       won: 'Board cleared!',
     },
-    snakeHint: 'Arrow keys / WASD · swipe on touch',
+    snakeHint: 'Arrows / WASD · swipe to move · Space: pause / resume · Esc: close',
     flappyOptions: {
       environment: 'Environment', day: 'Day', sunset: 'Sunset', night: 'Night', space: 'Space', beach: 'Beach',
       chooseBird: 'Choose your bird', canary: 'Canary', bluejay: 'Blue jay', parrot: 'Parrot',

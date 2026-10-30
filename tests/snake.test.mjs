@@ -313,6 +313,11 @@ test('only bonus fruit pulses; drawing never changes its hitbox or displays coun
     const copy = { ...fruit }
     const early = paint(fruit, 0)
     const later = paint(fruit, 250)
+    const body = early[0]
+    const radius = kind === 'durian'
+      ? Math.hypot(body[1] - (fruit.x + 0.5) * 22, body[2] - (fruit.y + 0.5) * 22)
+      : kind === 'mango' ? body[4] : body[3]
+    assert.ok(radius > 11, `${kind} should be larger than its cell`)
     if (kind === 'apple') assert.deepEqual(early, later)
     else assert.notDeepEqual(early, later)
     assert.deepEqual(fruit, copy)

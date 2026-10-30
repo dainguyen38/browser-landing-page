@@ -1,6 +1,6 @@
 import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Play, RotateCcw, Upload, X, Settings2, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Play, RotateCcw, Upload, X, Settings2, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
 import { useT } from '@/i18n/useT'
@@ -328,13 +328,14 @@ export function SnakeGame() {
           </footer>
         </DialogContent>
       </Dialog>
+      <p className="shrink-0 text-center text-xs text-white/60">{t('minigame.snakeHint')}</p>
       <div className="flex shrink-0 items-center justify-center gap-3 text-xs text-white/75">
         {(Object.keys(FRUITS) as (keyof typeof FRUITS)[]).map((kind) => (
           <span key={kind} title={t(`minigame.snakeOptions.${kind}`)} className="whitespace-nowrap">{FRUIT_ICONS[kind]} +{FRUITS[kind].points}</span>
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-2 [@media(max-height:500px)]:grid-cols-[minmax(0,1fr)_144px] [@media(max-height:500px)]:grid-rows-1">
-        <div ref={boardHostRef} className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div ref={boardHostRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
           <div className="relative shrink-0" style={boardSize}>
             <canvas
               ref={canvasRef}
@@ -376,19 +377,6 @@ export function SnakeGame() {
               </div>
             )}
           </div>
-        </div>
-        <div role="group" aria-label={t('minigame.snakeOptions.controls')} className="grid shrink-0 grid-cols-3 grid-rows-2 gap-1 self-center justify-self-center pb-[env(safe-area-inset-bottom)]">
-          {([
-            ['up', ArrowUp, 'col-start-2 row-start-1'],
-            ['left', ArrowLeft, 'col-start-1 row-start-2'],
-            ['down', ArrowDown, 'col-start-2 row-start-2'],
-            ['right', ArrowRight, 'col-start-3 row-start-2'],
-          ] as const).map(([dir, Icon, position]) => <button key={dir} type="button" disabled={!running}
-            aria-label={t(`minigame.snakeOptions.${dir}`)}
-            className={`${position} flex h-11 w-11 touch-manipulation select-none items-center justify-center rounded-xl border border-emerald-200/25 bg-emerald-300/10 text-emerald-100 active:bg-emerald-300/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-35`}
-            onPointerDown={(e) => { if (e.button !== 0) return; e.preventDefault(); handleDir(dir) }} onClick={() => handleDir(dir)}>
-            <Icon className="h-6 w-6" />
-          </button>)}
         </div>
       </div>
     </div>
