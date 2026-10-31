@@ -63,7 +63,7 @@ export function Keyboard({ pressed, nextKey, upcoming = [], compact = false, cla
   return (
     <div
       className={cn(
-        'inline-flex flex-col items-center gap-1.5 select-none',
+        'typing-keyboard inline-flex flex-col items-center gap-1.5 select-none',
         className,
       )}
     >

@@ -55,6 +55,19 @@ export function validSnapshot(game: GameKey, value: unknown): value is GameSnaps
         typeof value.refs.claimed?.current === 'boolean'
     }
     if (!object(st) || typeof st.over !== 'boolean' || st.over !== s.over || !nonnegative(st.score) || st.score !== s.score) return false
+    if (game === 'blockblast') {
+      const view = s.view
+      const validView = view === undefined || (object(view) && number(view.yaw) && view.yaw >= -Math.PI*1.25 && view.yaw <= Math.PI*.75 &&
+        number(view.tilt) && view.tilt >= Math.PI*35/180 && view.tilt <= Math.PI*65/180 && number(view.zoom) && view.zoom >= .6 && view.zoom <= 1)
+      return validView && (s.blockStyle === undefined || (integer(s.blockStyle) && s.blockStyle >= 0 && s.blockStyle < 6)) &&
+        matrix(st.board, 8, 8, (v) => integer(v) && v >= 0 && v <= 7) &&
+        integer(st.combo) && st.combo >= 0 && integer(s.theme) && s.theme >= 0 && s.theme < 6 &&
+        Array.isArray(st.pieces) && st.pieces.length === 3 && st.pieces.some((p: unknown) => p !== null) &&
+        st.pieces.every((p: any) => p === null || (object(p) && integer(p.color) && p.color >= 1 && p.color <= 7 &&
+          Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 9 &&
+          p.cells.every((c: unknown) => point(c) && c.x >= 0 && c.x < 5 && c.y >= 0 && c.y < 5) &&
+          new Set(p.cells.map((c: any) => `${c.x},${c.y}`)).size === p.cells.length))
+    }
     if (game === 'snake') {
       if (!integer(st.cols) || !integer(st.rows) || st.cols < 16 || st.cols > 32 || st.rows < 16 || st.rows > 24) return false
       const inside = (p: unknown) => point(p) && p.x >= 0 && p.x < st.cols && p.y >= 0 && p.y < st.rows

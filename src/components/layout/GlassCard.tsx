@@ -16,7 +16,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
   ({ className, variant = 'soft', ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(VARIANT_CLASS[variant], 'p-5 h-full w-full animate-fade-in', className)}
+      className={cn(VARIANT_CLASS[variant], 'p-4 sm:p-5 h-full min-w-0 w-full animate-fade-in', className)}
       {...props}
     />
   ),

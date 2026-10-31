@@ -195,9 +195,9 @@ export function GoldPriceWidget() {
         </Button>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 shrink-0">
+      <div className="grid grid-cols-2 gap-2 shrink-0 lg:grid-cols-3">
         <Select value={metal} onValueChange={(v) => setMetal(v as MetalCode)}>
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger className="col-span-2 h-8 text-xs lg:col-span-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

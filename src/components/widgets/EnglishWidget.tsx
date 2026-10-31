@@ -144,10 +144,10 @@ export function EnglishWidget() {
       </header>
 
       {/* Controls row */}
-      <div className="grid grid-cols-12 gap-2 shrink-0">
-        <div className="col-span-5 flex items-center gap-1">
+      <div className="grid grid-cols-2 gap-2 shrink-0 xl:grid-cols-12">
+        <div className="col-span-2 min-w-0 xl:col-span-5 flex items-center gap-1">
           <Select value={activeTopic?.id ?? ''} onValueChange={setActiveTopic}>
-            <SelectTrigger className="h-8 text-xs flex-1">
+            <SelectTrigger className="h-8 min-w-0 text-xs flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -179,7 +179,7 @@ export function EnglishWidget() {
             </Button>
           )}
         </div>
-        <div className="col-span-4 flex items-center gap-2 text-xs text-white/75">
+        <div className="col-span-1 min-w-0 xl:col-span-4 flex items-center gap-2 text-xs text-white/75">
           <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
           <input
             type="range"
@@ -187,14 +187,14 @@ export function EnglishWidget() {
             max={MAX_WORD_COUNT}
             value={wordCount}
             onChange={(e) => setWordCount(parseInt(e.target.value, 10))}
-            className="flex-1"
+            className="min-w-0 flex-1"
           />
           <span className="w-6 text-center tabular-nums">{wordCount}</span>
         </div>
-        <div className="col-span-3 flex items-center gap-1">
+        <div className="col-span-1 min-w-0 xl:col-span-3 flex items-center gap-1">
           <Languages className="h-3.5 w-3.5 text-white/55 shrink-0" />
           <Select value={targetLanguage} onValueChange={setTargetLanguage}>
-            <SelectTrigger className="h-8 text-xs flex-1">
+            <SelectTrigger className="h-8 min-w-0 text-xs flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

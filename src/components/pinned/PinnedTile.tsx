@@ -62,7 +62,7 @@ export function PinnedTile({ site, onEdit, onDelete }: Props) {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="absolute top-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/30 text-white/70 hover:text-white hover:bg-black/60 opacity-0 group-hover/tile:opacity-100 transition-opacity"
+            className="absolute top-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/30 text-white/70 hover:text-white hover:bg-black/60 [@media(hover:none)]:opacity-100 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 opacity-0 group-hover/tile:opacity-100 transition-opacity"
             aria-label="More"
             onClick={(e) => e.preventDefault()}
           >

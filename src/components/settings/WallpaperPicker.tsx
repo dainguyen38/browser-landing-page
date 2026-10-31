@@ -146,7 +146,7 @@ function Gallery({
   onRemove?: (id: string) => void
 }) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {thumbs.map((thumb) => (
         <div key={thumb.id} className="relative group/wp">
           <button
@@ -174,7 +174,7 @@ function Gallery({
             <button
               type="button"
               onClick={() => onRemove(thumb.id)}
-              className="absolute top-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/60 text-white opacity-0 group-hover/wp:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/60 text-white [@media(hover:none)]:opacity-100 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 opacity-0 group-hover/wp:opacity-100 transition-opacity"
               aria-label="Remove"
             >
               <Trash2 className="h-3 w-3" />

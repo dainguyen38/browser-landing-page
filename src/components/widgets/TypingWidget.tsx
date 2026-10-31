@@ -227,7 +227,7 @@ export function TypingWidget() {
 
       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
         <DialogContent
-          className="w-[min(96vw,1400px)] max-w-none h-[min(95vh,820px)] p-0 gap-0 overflow-hidden flex flex-col"
+          className="w-[min(96vw,1400px)] max-w-none h-[min(94dvh,820px)] p-0 gap-0 overflow-hidden flex flex-col"
           // Game handles Esc to pause; don't let Radix close the dialog on Esc.
           onEscapeKeyDown={(e) => e.preventDefault()}
           // Prevent click-on-overlay from closing accidentally during a run.

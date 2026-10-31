@@ -1,5 +1,5 @@
 import { useGameSession, useGameState, useGameRef } from './GameSession'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RotateCcw, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -91,17 +91,6 @@ function generate(difficulty: Difficulty): { puzzle: Cell[][]; solution: number[
   return { puzzle, solution }
 }
 
-function countErrors(board: Cell[][], solution: number[][]): number {
-  let errors = 0
-  for (let r = 0; r < N; r++) {
-    for (let c = 0; c < N; c++) {
-      const v = board[r][c].value
-      if (v && !board[r][c].fixed && v !== solution[r][c]) errors++
-    }
-  }
-  return errors
-}
-
 function isSolved(board: Cell[][], solution: number[][]): boolean {
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
@@ -134,7 +123,21 @@ export function Sudoku() {
   const recordScore = useMinigameStore((s) => s.recordScore)
   const claimedRef = useGameRef('claimed', false)
 
-  const errors = useMemo(() => countErrors(board, solution), [board, solution])
+  const layoutRef = useRef<HTMLDivElement>(null)
+  const [boardSize, setBoardSize] = useState(0)
+  useEffect(() => {
+    const host = layoutRef.current
+    if (!host) return
+    const fit = () => {
+      const mobile = window.matchMedia('(max-width: 639px)').matches
+      const height = host.clientHeight
+      setBoardSize(Math.max(0, Math.min(host.clientWidth, mobile ? Math.min((height - 64) / 1.4, height - 160) : (height - 64) * 0.9)))
+    }
+    const observer = new ResizeObserver(fit)
+    observer.observe(host)
+    fit()
+    return () => observer.disconnect()
+  }, [])
 
   const newGame = useCallback(
     (diff: Difficulty) => {
@@ -167,16 +170,16 @@ export function Sudoku() {
       setSolved(true)
       setRunning(false)
       const timeBonus = Math.max(0, 600 - seconds)
-      const score = DIFFICULTY_BONUS[difficulty] + timeBonus - errors * 10
+      const score = DIFFICULTY_BONUS[difficulty] + timeBonus
       recordScore('sudoku', Math.max(0, score))
       claimedRef.current = true
     }
-  }, [board, solution, solved, seconds, errors, difficulty, recordScore])
+  }, [board, solution, solved, seconds, difficulty, recordScore])
 
   const setValue = useCallback(
     (r: number, c: number, v: number) => {
       return session.guard(() => {
-        if (session.paused) return
+        if (session.paused || solved) return
         setBoard((prev) => {
           if (prev[r][c].fixed) return prev
           const next = prev.map((row) => row.map((cell) => ({ ...cell })))
@@ -185,14 +188,14 @@ export function Sudoku() {
         })
       })
     },
-    [],
+    [solved],
   )
 
   // keyboard input
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       return session.guard(() => {
-        if (session.paused) return
+        if (session.paused || solved) return
         const a = document.activeElement
         if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
         if (!selected) return
@@ -225,10 +228,10 @@ export function Sudoku() {
   const selectedValue = selected ? board[selected.r][selected.c].value : 0
 
   return (
-    <div className="flex flex-col gap-3 h-full min-h-0 overflow-auto">
-      <ScoreBoard score={errors === 0 && solved ? Math.max(0, DIFFICULTY_BONUS[difficulty] + Math.max(0, 600 - seconds) - errors * 10) : 0} best={highScore} label={t('minigame.score')} />
+    <div className="flex flex-col gap-3 h-full min-h-0 overflow-y-auto overscroll-contain">
+      <ScoreBoard className="shrink-0" score={solved ? Math.max(0, DIFFICULTY_BONUS[difficulty] + Math.max(0, 600 - seconds)) : 0} best={highScore} label={t('minigame.score')} />
 
-      <div className="flex flex-wrap items-center gap-2 justify-between">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 justify-between">
         <div className="flex items-center gap-2">
           <Select value={difficulty} onValueChange={(v) => newGame(v as Difficulty)}>
             <SelectTrigger className="h-8 w-32 text-xs">
@@ -246,14 +249,13 @@ export function Sudoku() {
         </div>
         <div className="flex items-center gap-3 text-xs text-white/85 tabular-nums">
           <span>⏱ {formatTime(seconds)}</span>
-          <span className={cn(errors > 0 && 'text-rose-300')}>✗ {errors}</span>
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-3">
+      <div ref={layoutRef} className="flex min-h-[240px] flex-1 flex-col items-center gap-2 sm:min-h-0 [@media(max-height:500px)]:min-h-[240px]">
         <div
-          className="grid grid-cols-9 bg-white/5 rounded-lg overflow-hidden border-2 border-white/30"
-          style={{ width: 'min(100%, 420px)', aspectRatio: '1 / 1' }}
+          className="grid shrink-0 grid-cols-9 bg-white/5 rounded-lg overflow-hidden border-2 border-white/30"
+          style={{ width: boardSize, height: boardSize, fontSize: Math.max(14, boardSize / 22) }}
         >
           {board.map((row, r) =>
             row.map((cell, c) => {
@@ -265,21 +267,18 @@ export function Sudoku() {
                 Math.floor(selected.r / 3) === Math.floor(r / 3) &&
                 Math.floor(selected.c / 3) === Math.floor(c / 3)
               const sameValue = selectedValue !== 0 && cell.value === selectedValue
-              const isError =
-                !cell.fixed && cell.value !== 0 && cell.value !== solution[r][c]
               return (
                 <button
                   key={`${r}-${c}`}
                   onClick={() => setSelected({ r, c })}
                   className={cn(
-                    'aspect-square flex items-center justify-center font-semibold text-base sm:text-lg select-none transition-colors',
+                    'aspect-square flex items-center justify-center font-semibold select-none transition-colors',
                     'border border-white/10',
                     c % 3 === 2 && c !== 8 && 'border-r-2 border-r-white/30',
                     r % 3 === 2 && r !== 8 && 'border-b-2 border-b-white/30',
                     cell.fixed ? 'text-white' : 'text-sky-300',
-                    isError && 'text-rose-300 bg-rose-500/20',
-                    !isSelected && !isError && sameValue && cell.value !== 0 && 'bg-sky-400/20',
-                    !isSelected && !isError && (sameRow || sameCol || sameBox) && 'bg-white/[0.06]',
+                    !isSelected && sameValue && cell.value !== 0 && 'bg-sky-400/20',
+                    !isSelected && (sameRow || sameCol || sameBox) && 'bg-white/[0.06]',
                     isSelected && 'bg-sky-500/40 ring-2 ring-sky-300 z-10',
                   )}
                 >
@@ -290,13 +289,13 @@ export function Sudoku() {
           )}
         </div>
 
-        <div className="grid grid-cols-9 gap-1.5 w-full max-w-[420px]">
+        <div className="grid shrink-0 grid-cols-5 gap-1.5 sm:grid-cols-9" style={{ width: boardSize }}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
             <button
               key={n}
               onClick={() => selected && setValue(selected.r, selected.c, n)}
               disabled={!selected || board[selected.r][selected.c].fixed}
-              className="aspect-square flex items-center justify-center rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white font-semibold text-base disabled:opacity-40 disabled:pointer-events-none"
+              className="min-h-11 sm:min-h-0 aspect-square flex items-center justify-center rounded-lg border border-white/15 bg-white/10 hover:bg-white/20 text-white font-semibold text-base disabled:opacity-40 disabled:pointer-events-none"
             >
               {n}
             </button>
@@ -305,7 +304,7 @@ export function Sudoku() {
         <button
           onClick={() => selected && setValue(selected.r, selected.c, 0)}
           disabled={!selected || board[selected.r][selected.c].fixed}
-          className="text-xs text-white/70 hover:text-white disabled:opacity-40"
+          className="min-h-11 px-4 text-sm text-white/70 hover:text-white disabled:opacity-40"
         >
           {t('minigame.erase')}
         </button>
@@ -316,7 +315,7 @@ export function Sudoku() {
           <CheckCircle2 className="h-7 w-7 text-emerald-300" />
           <div className="font-semibold text-emerald-100">{t('minigame.sudokuWin')}</div>
           <div className="text-xs text-emerald-200/80">
-            {t('minigame.time')}: {formatTime(seconds)} · {t('minigame.errors')}: {errors}
+            {t('minigame.time')}: {formatTime(seconds)}
           </div>
           <Button onClick={() => newGame(difficulty)} size="sm" className="mt-1">
             {t('minigame.newGame')}

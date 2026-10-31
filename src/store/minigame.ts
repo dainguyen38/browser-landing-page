@@ -3,9 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Environment } from '@/lib/flappy/scene'
 import type { BirdStyle } from '@/lib/flappy/birds'
 
-export type GameKey = 'snake' | 'flappy' | 'tetris' | 'sudoku' | 'goldminer' | 'dino' | 'g2048'
+export type GameKey = 'snake' | 'flappy' | 'tetris' | 'sudoku' | 'goldminer' | 'dino' | 'g2048' | 'blockblast'
 
-const ALL_GAMES: GameKey[] = ['snake', 'flappy', 'tetris', 'sudoku', 'goldminer', 'dino', 'g2048']
+const ALL_GAMES: GameKey[] = ['snake', 'flappy', 'tetris', 'sudoku', 'goldminer', 'dino', 'g2048', 'blockblast']
 
 type State = {
   highScores: Record<GameKey, number>
@@ -24,7 +24,7 @@ type Actions = {
 export const useMinigameStore = create<State & Actions>()(
   persist(
     (set, get) => ({
-      highScores: { snake: 0, flappy: 0, tetris: 0, sudoku: 0, goldminer: 0, dino: 0, g2048: 0 },
+      highScores: { snake: 0, flappy: 0, tetris: 0, sudoku: 0, goldminer: 0, dino: 0, g2048: 0, blockblast: 0 },
       flappyRecord: null,
       flappyBird: 'canary',
       flappyEnvironment: 'day',
@@ -48,6 +48,10 @@ export const useMinigameStore = create<State & Actions>()(
     {
       name: 'landing.minigame.v2',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<State> | undefined
+        return { ...current, ...saved, highScores: { ...current.highScores, ...saved?.highScores } }
+      },
       migrate: (persisted: any) => {
         const prev = persisted?.state?.highScores ?? persisted?.highScores ?? {}
         const filled: Record<GameKey, number> = {} as Record<GameKey, number>

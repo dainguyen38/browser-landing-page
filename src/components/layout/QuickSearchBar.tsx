@@ -46,7 +46,7 @@ export function QuickSearchBar() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as Element | null
-      if (isTypingTarget(target)) return
+      if (isTypingTarget(target) || target?.closest('[role=dialog], [role=application], button, a') || document.querySelector('[role=dialog]')) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key.length === 1) {
         e.preventDefault()
@@ -78,13 +78,13 @@ export function QuickSearchBar() {
 
   // Click outside → close suggestions
   useEffect(() => {
-    function onDown(e: MouseEvent) {
+    function onDown(e: PointerEvent) {
       if (!wrapRef.current?.contains(e.target as Node)) {
         setShowSugg(false)
       }
     }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
   }, [])
 
   // Debounced suggestion fetch
@@ -165,7 +165,7 @@ export function QuickSearchBar() {
         e.preventDefault()
         submit(value)
       }}
-      className="flex-1 max-w-2xl mx-auto relative"
+      className="w-full min-w-0 flex-1 max-w-2xl mx-auto relative"
     >
       <div className="relative flex items-stretch gap-1">
         {/* Engine picker */}
@@ -175,7 +175,7 @@ export function QuickSearchBar() {
               type="button"
               aria-label={t('quickSearch.engine')}
               title={engine.name}
-              className="inline-flex items-center gap-1 h-10 pl-2 pr-1.5 rounded-l-full bg-black/35 hover:bg-black/55 border border-white/15 border-r-0 text-white text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1 h-11 sm:h-10 pl-2 pr-1.5 rounded-l-full bg-black/35 hover:bg-black/55 border border-white/15 border-r-0 text-white text-xs font-semibold transition-colors"
             >
               <EngineLogo engineId={engine.id} size={20} />
               <ChevronDown className="h-3 w-3 opacity-70" />
@@ -215,7 +215,7 @@ export function QuickSearchBar() {
         </Popover>
 
         {/* Input */}
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/55 pointer-events-none" />
           <input
             ref={inputRef}
@@ -231,7 +231,7 @@ export function QuickSearchBar() {
             placeholder={t('quickSearch.placeholder')}
             spellCheck={false}
             autoComplete="off"
-            className="w-full h-10 pl-10 pr-10 rounded-r-full bg-black/35 hover:bg-black/45 focus:bg-black/55 border border-white/15 focus:border-white/35 text-white placeholder:text-white/45 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
+            className="w-full h-11 sm:h-10 pl-10 pr-10 rounded-r-full bg-black/35 hover:bg-black/45 focus:bg-black/55 border border-white/15 focus:border-white/35 text-white placeholder:text-white/45 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
           />
           {value && (
             <button
@@ -242,7 +242,7 @@ export function QuickSearchBar() {
                 inputRef.current?.focus()
               }}
               aria-label={t('quickSearch.clear')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-full text-white/55 hover:text-white hover:bg-white/15"
+              className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full text-white/55 hover:text-white hover:bg-white/15"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -252,19 +252,15 @@ export function QuickSearchBar() {
 
       {/* Suggestions panel */}
       {visibleSuggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-30 rounded-2xl border border-white/15 bg-zinc-900/85 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-30 rounded-2xl border border-white/15 bg-zinc-900/85 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] max-h-[50dvh] overflow-y-auto overscroll-contain">
           {visibleSuggestions.map((s, i) => (
             <button
               key={`${s}-${i}`}
               type="button"
               onMouseEnter={() => setHighlight(i)}
-              onMouseDown={(e) => {
-                // mouseDown to fire before blur clears focus
-                e.preventDefault()
-                submit(s)
-              }}
+              onClick={() => submit(s)}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors',
+                'w-full min-h-11 flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors',
                 highlight === i ? 'bg-white/15 text-white' : 'text-white/90 hover:bg-white/10',
               )}
             >

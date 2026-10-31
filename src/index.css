@@ -182,3 +182,59 @@
   z-index: 30;
   cursor: grabbing;
 }
+
+/* Keep mobile controls clear of notches and the home indicator. */
+.app-main {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .app-main { padding-left: max(1.5rem, env(safe-area-inset-left)); padding-right: max(1.5rem, env(safe-area-inset-right)); }
+}
+@media (min-width: 1024px) {
+  .app-main { padding-left: 2rem; padding-right: 2rem; }
+}
+@media (max-width: 767px) {
+  [data-ui="dialog"] {
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top)) - max(0.75rem, env(safe-area-inset-bottom)));
+  }
+  .mobile-widget > * { overflow: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@media (max-width: 767px) {
+  .typing-keyboard { width: 100%; max-width: 100%; }
+  .typing-keyboard > div { width: 100%; gap: 2px; }
+  .typing-keyboard > div > div { min-width: 0; width: 0; flex: 1; padding-inline: 0; height: 30px; font-size: 9px; }
+  .typing-keyboard > div:last-child > div { flex: 0 1 65%; width: 65%; }
+}
+
+
+@media (pointer: coarse) {
+  input.text-sm, input.text-xs, textarea, select { font-size: 16px; }
+  input[type="range"] { min-height: 44px; }
+}
+
+@keyframes blast-shockwave {
+  from { transform: scale(.15); opacity: .85; }
+  to { transform: scale(3); opacity: 0; }
+}
+.blast-shockwave {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: blast-shockwave .7s cubic-bezier(.16,.7,.2,1) both;
+}
+
+.blockblast-root[data-paused="true"] .blast-shockwave { animation-play-state: paused; }
+
+.blast-style-preview { display:block; width:32px; height:32px; border-radius:7px; box-shadow:inset 2px 3px 3px #ffffff88,inset -3px -4px 3px #0004,0 5px 0 #0004; }
+.blast-style-crystal { border-radius:2px; background-image:linear-gradient(130deg,#fff9,transparent 40%,#fff7 43%,transparent 55%); transform:rotate(-8deg); }
+.blast-style-neon { border:2px solid #c8ffff; box-shadow:0 0 14px #66f7ff,inset 0 0 8px #004; }
+.blast-style-wood { border-radius:3px; background-image:repeating-linear-gradient(10deg,#54351188 0 2px,transparent 2px 6px); }
+.blast-style-pixel { border-radius:0; box-shadow:inset 4px 4px #fff5,inset -4px -4px #0005,4px 4px #0006; }
+.blast-style-chrome { background-image:linear-gradient(135deg,#fff9,transparent 25%,#fff9 48%,#17253d88 51%,#fff8); }

@@ -37,8 +37,8 @@ export function ClockWidget() {
       <div className="text-soft-shadow text-sm uppercase tracking-[0.3em] text-white/80">
         {t(`greeting.${gk}`)}, <span className="text-white">{name}</span>
       </div>
-      <div className="mt-2 flex items-baseline gap-2 font-semibold tabular-nums text-soft-shadow">
-        <span className="text-7xl md:text-8xl leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
+      <div className="mt-2 flex items-baseline min-w-0 gap-1 sm:gap-2 font-semibold tabular-nums text-soft-shadow">
+        <span className="text-[clamp(2.25rem,12vw,4.5rem)] lg:text-8xl leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]">
           {timeStr}
         </span>
         <span className="text-2xl md:text-3xl text-white/80">{seconds}</span>

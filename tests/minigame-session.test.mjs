@@ -17,7 +17,7 @@ globalThis.localStorage = {
   removeItem: (key) => saved.delete(key),
 }
 after(() => { delete globalThis.localStorage })
-const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048' }
+const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048', blockblast: 'BlockBlast' }
 const entry = [
   ...Object.values(names).map((name) => `export { ${name} } from './src/components/minigames/${name}.tsx'`),
   "export * from './src/components/minigames/GameSession.tsx'",
@@ -62,7 +62,7 @@ test('snake toggles pause with Space and closes with Esc; other games pause then
   }
 })
 
-test('all seven actual game components restore the same versioned data into fresh React state', () => {
+test('all actual game components restore the same versioned data into fresh React state', () => {
   for (const game of Object.keys(names)) {
     const first = session(game)
     mount(game, first)
@@ -98,6 +98,53 @@ test('all seven actual game components restore the same versioned data into fres
     assert.deepEqual(restored.snapshot, before, `${game} must not reroll, reset, or mutate saved gameplay`)
     assert.equal(restored.paused, true)
   }
+})
+
+test('Sudoku renders incorrect entries without error colors or an error counter', () => {
+  const control = session('sudoku')
+  mount('sudoku', control)
+  const { board, solution } = control.snapshot.state
+  const r = board.findIndex((row) => row.some((cell) => !cell.fixed))
+  const c = board[r].findIndex((cell) => !cell.fixed)
+  board[r][c].value = solution[r][c] % 9 + 1
+  control.snapshot.state.selected = { r, c }
+  const html = mount('sudoku', control)
+  assert.doesNotMatch(html, /rose-|✗/)
+  assert.match(html, /bg-sky-500\/40/)
+  assert.equal(games.validSnapshot('sudoku', control.snapshot), true)
+})
+
+test('Block Blast keeps custom materials, environment and bounded view when reopened', () => {
+  const first = session('blockblast')
+  mount('blockblast', first)
+  Object.assign(first.snapshot.state, { theme: 5, blockStyle: 5, view: { yaw: 1.2, tilt: 1, zoom: .8 } })
+  assert.equal(games.validSnapshot('blockblast', first.snapshot), true)
+  const data = copy(first.snapshot)
+  const restored = session('blockblast', copy(data))
+  mount('blockblast', restored)
+  assert.deepEqual(restored.snapshot, data)
+  for (const patch of [{theme:6},{blockStyle:6},{view:{yaw:5,tilt:1,zoom:1}},{view:{yaw:0,tilt:0,zoom:1}},{view:{yaw:0,tilt:1,zoom:1.1}}]) {
+    const bad = copy(data)
+    Object.assign(bad.state, patch)
+    assert.equal(games.validSnapshot('blockblast', bad), false)
+  }
+  const older = copy(data)
+  delete older.state.view
+  delete older.state.blockStyle
+  assert.equal(games.validSnapshot('blockblast', older), true)
+})
+
+test('existing saved best scores gain a zero Block Blast record without losing older records', async () => {
+  const store = games.useMinigameStore
+  const before = store.getState()
+  saved.set('landing.minigame.v2', JSON.stringify({ state: { highScores: { snake: 71, flappy: 19 } }, version: 0 }))
+  await store.persist.rehydrate()
+  assert.equal(store.getState().highScores.blockblast, 0)
+  assert.equal(store.getState().highScores.snake, 71)
+  assert.equal(store.getState().highScores.flappy, 19)
+  store.getState().recordScore('blockblast', 42)
+  assert.equal(store.getState().highScores.blockblast, 42)
+  store.setState(before)
 })
 
 test('snake continues from the saved head, direction, length and fruit instead of starting over', () => {

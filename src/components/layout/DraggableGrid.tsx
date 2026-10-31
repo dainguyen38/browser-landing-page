@@ -4,10 +4,24 @@ import { GripVertical } from 'lucide-react'
 import { useLayoutStore, type GridItem, type WidgetId, DEFAULT_LAYOUT } from '@/store/layout'
 
 const Responsive = WidthProvider(GridLayout)
+const compactQuery = '(max-width: 1023px)'
+const subscribe = (callback: () => void) => {
+  const media = window.matchMedia(compactQuery)
+  media.addEventListener('change', callback)
+  return () => media.removeEventListener('change', callback)
+}
+const isCompact = () => window.matchMedia(compactQuery).matches
+const compactServerSnapshot = () => true
+const MOBILE_HEIGHTS: Record<WidgetId, number> = {
+  clock: 224, weather: 280, gold: 360, currency: 440, lunar: 460,
+  pinned: 280, todo: 420, minigame: 400, calculator: 520, colorpicker: 620,
+  notes: 440, drawing: 520, tree: 600, english: 620, football: 560, typing: 620,
+}
 
 type WidgetChild = { id: WidgetId; node: React.ReactNode }
 
 export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
+  const compact = React.useSyncExternalStore(subscribe, isCompact, compactServerSnapshot)
   const layout = useLayoutStore((s) => s.layout)
   const hidden = useLayoutStore((s) => s.hidden)
   const setLayout = useLayoutStore((s) => s.setLayout)
@@ -67,6 +81,15 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
     if (changed) setLayout(Array.from(map.values()))
   }
 
+  if (compact) {
+    const ordered = [...currentLayout].sort((a, b) => a.y - b.y || a.x - b.x)
+    return <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+      {ordered.map(({ i }) => <section key={i} data-widget={i} className="mobile-widget min-w-0" style={{ height: MOBILE_HEIGHTS[i] }}>
+        {byId.get(i)}
+      </section>)}
+    </div>
+  }
+
   return (
     <Responsive
       className="layout"
@@ -86,7 +109,7 @@ export function DraggableGrid({ widgets }: { widgets: WidgetChild[] }) {
         // `isolate` creates a new stacking context so any hover-triggered
         // repaint inside this widget cannot leak into neighbouring cards'
         // backdrop-filter blur. Pair with `translateZ(0)` on `.glass`.
-        <div key={id} className="group/widget relative isolate">
+        <div key={id} className="group/widget relative min-w-0 isolate">
           <button
             type="button"
             aria-label="Drag widget"

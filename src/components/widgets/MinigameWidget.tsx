@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, X, RotateCcw, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, Pause, X, RotateCcw, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GameSessionContext, GameErrorBoundary, createGameSession, type GameSession } from '@/components/minigames/GameSession'
 import { newSnapshot, validSnapshot } from '@/lib/minigame/snapshot'
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { BlockBlast } from '@/components/minigames/BlockBlast'
 import { SnakeGame } from '@/components/minigames/SnakeGame'
 import { FlappyBird } from '@/components/minigames/FlappyBird'
 import { Tetris } from '@/components/minigames/Tetris'
@@ -39,6 +40,7 @@ type GameDef = {
 }
 
 const GAMES: GameDef[] = [
+  { key: 'blockblast', icon: Boxes, gradient: 'from-blue-500/30 to-fuchsia-500/20', color: 'text-blue-200', Component: BlockBlast },
   {
     key: 'snake',
     icon: Worm,
@@ -159,6 +161,7 @@ export function MinigameWidget() {
   }, [active, paused])
 
   const activeGame = active ? GAMES.find((g) => g.key === active) : null
+  const immersive = active === 'flappy' || active === 'snake' || active === 'blockblast'
 
   return (
     <>
@@ -199,7 +202,7 @@ export function MinigameWidget() {
             if (gameKeyAction(active, session.paused, event.key) === 'resume') resumeGame()
             else session.setPaused(true)
           }}
-          className={`flex h-[94dvh] max-h-[94dvh] w-[96vw] max-w-[96vw] flex-col overflow-hidden rounded-2xl border-white/15 ${active === 'flappy' || active === 'snake' ? 'p-0 gap-0' : 'p-3 sm:p-5'} [&>button:last-child]:z-30 [&>button:last-child]:rounded-full [&>button:last-child]:bg-slate-950/50 [&>button:last-child]:p-2 [&>button:last-child]:text-white`}
+          className={`flex h-[94dvh] max-h-[94dvh] w-[96vw] max-w-[96vw] flex-col overflow-hidden rounded-2xl border-white/15 ${immersive ? 'p-0 gap-0' : 'p-3 sm:p-5'} [&>button:last-child]:z-30 [&>button:last-child]:rounded-full [&>button:last-child]:bg-slate-950/50 [&>button:last-child]:p-2 [&>button:last-child]:text-white`}
           onOpenAutoFocus={(event) => {
             if (paused) {
               event.preventDefault()
@@ -210,19 +213,22 @@ export function MinigameWidget() {
             }
           }}
         >
-          <DialogHeader className={active === 'flappy' || active === 'snake' ? 'sr-only' : 'shrink-0 pr-12'}>
+          <DialogHeader className={immersive ? 'sr-only' : 'shrink-0 pr-24'}>
             <DialogTitle className="flex items-center gap-2">
               {activeGame && <activeGame.icon className={`h-5 w-5 ${activeGame.color}`} />}
               {activeGame && t(`minigame.games.${activeGame.key}`)}
             </DialogTitle>
           </DialogHeader>
-          <div ref={hostRef} className={`min-h-0 min-w-0 flex flex-1 flex-col ${active === 'flappy' || active === 'snake' ? 'w-full overflow-hidden' : 'overflow-auto'}`}>
+          <div ref={hostRef} className={`min-h-0 min-w-0 flex flex-1 flex-col ${immersive ? 'w-full overflow-hidden' : 'overflow-auto'}`}>
             {activeGame && active && !fault && <GameSessionContext.Provider value={sessions.current.get(active)!}>
               <GameErrorBoundary key={`${active}:${generation}`} session={sessions.current.get(active)!}>
                 <activeGame.Component />
               </GameErrorBoundary>
             </GameSessionContext.Provider>}
           </div>
+          {active && !paused && !fault && <Button variant="secondary" size="icon" aria-label={t('minigame.pause')}
+            className={`absolute ${immersive ? 'bottom-3 right-3' : 'top-2 right-14'} z-30 h-11 w-11 rounded-full border border-white/20 bg-slate-950/70 text-white shadow-lg backdrop-blur-md ${active === 'blockblast' ? 'blockblast-pause' : ''}`}
+            onClick={() => sessions.current.get(active)!.setPaused(true)}><Pause className="h-5 w-5" /></Button>}
           {(paused || fault) && <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto rounded-2xl bg-slate-950/80 p-4 backdrop-blur-md">
             <div className="m-auto flex max-w-sm flex-col items-center gap-4 text-center">
               <div role={fault ? 'alert' : 'status'} className="text-2xl font-bold text-white">{t(fault ? 'minigame.resumeFailed' : 'minigame.paused')}</div>

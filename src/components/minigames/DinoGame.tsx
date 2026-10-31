@@ -1,3 +1,5 @@
+import { useElementSize } from '@/hooks/useElementSize'
+import { fitBoard } from '@/lib/snake/layout'
 import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
@@ -72,6 +74,7 @@ function initial(): GameState {
 
 export function DinoGame() {
   const session = useGameSession()
+  const { ref: boardHostRef, size: available } = useElementSize<HTMLDivElement>()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useGameRef<GameState>('engine', initial)
@@ -429,49 +432,48 @@ export function DinoGame() {
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
-      <ScoreBoard score={score} best={highScore} label={t('minigame.score')} />
-      <div
-        className="relative mx-auto w-full"
-        style={{ aspectRatio: `${W} / ${H}`, maxHeight: 'calc(95vh - 220px)' }}
-      >
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          onClick={() => {
-            if (!running && !stateRef.current.over) start()
-            else jump()
-          }}
-          className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] cursor-pointer select-none touch-none"
-        />
-        {!running && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2 pointer-events-none">
-            {over ? (
-              <>
-                <div className="text-2xl font-bold text-white drop-shadow">
-                  {t('minigame.gameOver')}
-                </div>
-                {score >= highScore && score > 0 && (
-                  <div className="text-amber-300 text-sm font-medium">
-                    ★ {t('minigame.newBest')}
+      <ScoreBoard className="shrink-0" score={score} best={highScore} label={t('minigame.score')} />
+      <div ref={boardHostRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
+        <div className="relative shrink-0" style={fitBoard(available.width, available.height, W, H)}>
+          <canvas
+            ref={canvasRef}
+            width={W}
+            height={H}
+            onClick={() => {
+              if (!running && !stateRef.current.over) start()
+              else jump()
+            }}
+            className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] cursor-pointer select-none touch-none"
+          />
+          {!running && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2 pointer-events-none">
+              {over ? (
+                <>
+                  <div className="text-2xl font-bold text-white drop-shadow">
+                    {t('minigame.gameOver')}
                   </div>
-                )}
-                <Button onClick={start} className="mt-2 pointer-events-auto">
-                  <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={start} size="lg" className="pointer-events-auto">
-                  <Play className="h-5 w-5" /> {t('minigame.play')}
-                </Button>
-                <div className="text-[11px] text-white/70 mt-1 text-center max-w-[24rem]">
-                  {t('minigame.dinoHint')}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                  {score >= highScore && score > 0 && (
+                    <div className="text-amber-300 text-sm font-medium">
+                      ★ {t('minigame.newBest')}
+                    </div>
+                  )}
+                  <Button onClick={start} className="mt-2 pointer-events-auto">
+                    <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={start} size="lg" className="pointer-events-auto">
+                    <Play className="h-5 w-5" /> {t('minigame.play')}
+                  </Button>
+                  <div className="text-[11px] text-white/70 mt-1 text-center max-w-[24rem]">
+                    {t('minigame.dinoHint')}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -113,7 +113,7 @@ export function WidgetVisibilityPopover() {
           <button
             type="button"
             aria-label={t('widgets.toggleVisibility')}
-            className="relative inline-flex items-center justify-center h-9 w-9 rounded-md bg-black/35 hover:bg-black/55 border border-white/15 text-white transition-colors"
+            className="relative inline-flex items-center justify-center h-11 w-11 sm:h-9 sm:w-9 rounded-md bg-black/35 hover:bg-black/55 border border-white/15 text-white transition-colors"
           >
             <LayoutGrid className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-primary text-primary-foreground rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
@@ -231,7 +231,7 @@ function Row({ id, label, visible, pinned, onToggle, onTogglePin, onClear }: Row
         type="button"
         onClick={onToggle}
         className={cn(
-          'flex-1 text-left text-sm truncate transition-colors',
+          'min-h-11 min-w-0 flex-1 text-left text-sm truncate transition-colors',
           visible ? 'text-white/95' : 'text-white/45',
         )}
       >
@@ -288,7 +288,7 @@ function IconBtn({
       aria-label={title}
       disabled={disabled}
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors',
+        'inline-flex h-6 w-6 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 items-center justify-center rounded-md transition-colors',
         disabled
           ? 'text-white/15 cursor-not-allowed'
           : danger

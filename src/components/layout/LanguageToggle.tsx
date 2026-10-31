@@ -21,7 +21,7 @@ export function LanguageToggle() {
       onClick={() => setLocale(next.code)}
       aria-label={t('language.switch')}
       title={`${current.label} → ${next.label}`}
-      className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-md bg-black/35 hover:bg-black/55 border border-white/15 text-white text-xs font-semibold transition-colors"
+      className="inline-flex items-center gap-1.5 h-11 sm:h-9 px-2.5 rounded-md bg-black/35 hover:bg-black/55 border border-white/15 text-white text-xs font-semibold transition-colors"
     >
       <Languages className="h-4 w-4 text-white/85" />
       <span className="tabular-nums">{current.short}</span>

@@ -1,3 +1,5 @@
+import { useElementSize } from '@/hooks/useElementSize'
+import { fitBoard } from '@/lib/snake/layout'
 import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw } from 'lucide-react'
@@ -128,6 +130,7 @@ function initial(level = 1, prevScore = 0): GameState {
 
 export function GoldMiner() {
   const session = useGameSession()
+  const { ref: boardHostRef, size: available } = useElementSize<HTMLDivElement>()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useGameRef<GameState>('engine', initial)
@@ -364,7 +367,7 @@ export function GoldMiner() {
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
-      <ScoreBoard score={score} best={highScore} label={t('minigame.score')} />
+      <ScoreBoard className="shrink-0" score={score} best={highScore} label={t('minigame.score')} />
       <div className="flex items-center justify-between gap-2 text-xs text-white/85 tabular-nums flex-wrap">
         <span>
           {t('minigame.level')}: <span className="font-semibold text-white">{level}</span>
@@ -385,56 +388,55 @@ export function GoldMiner() {
           </Button>
         )}
       </div>
-      <div
-        className="relative mx-auto"
-        style={{ aspectRatio: `${W} / ${H}`, height: 'min(calc(95vh - 240px), 540px)' }}
-      >
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          onClick={dropClaw}
-          className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] cursor-pointer select-none"
-        />
-        {!running && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2">
-            {won ? (
-              <>
-                <div className="text-2xl font-bold text-emerald-200 drop-shadow">
-                  {t('minigame.levelClear')}!
-                </div>
-                <div className="text-sm text-white/75">
-                  {t('minigame.score')}: {score} / {target}
-                </div>
-                <Button onClick={nextLevel} className="mt-2">
-                  <Play className="h-4 w-4" /> {t('minigame.nextLevel')}
-                </Button>
-              </>
-            ) : over ? (
-              <>
-                <div className="text-2xl font-bold text-white drop-shadow">{t('minigame.gameOver')}</div>
-                <div className="text-sm text-white/75">
-                  {t('minigame.score')}: {score} / {target}
-                </div>
-                {score >= highScore && score > 0 && (
-                  <div className="text-amber-300 text-sm font-medium">★ {t('minigame.newBest')}</div>
-                )}
-                <Button onClick={start} className="mt-2">
-                  <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={start} size="lg">
-                  <Play className="h-5 w-5" /> {t('minigame.play')}
-                </Button>
-                <div className="text-[11px] text-white/70 mt-1 text-center max-w-[18rem]">
-                  {t('minigame.goldHint')}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+      <div ref={boardHostRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
+        <div className="relative shrink-0" style={fitBoard(available.width, available.height, W, H)}>
+          <canvas
+            ref={canvasRef}
+            width={W}
+            height={H}
+            onClick={dropClaw}
+            className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] cursor-pointer select-none touch-manipulation"
+          />
+          {!running && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2">
+              {won ? (
+                <>
+                  <div className="text-2xl font-bold text-emerald-200 drop-shadow">
+                    {t('minigame.levelClear')}!
+                  </div>
+                  <div className="text-sm text-white/75">
+                    {t('minigame.score')}: {score} / {target}
+                  </div>
+                  <Button onClick={nextLevel} className="mt-2">
+                    <Play className="h-4 w-4" /> {t('minigame.nextLevel')}
+                  </Button>
+                </>
+              ) : over ? (
+                <>
+                  <div className="text-2xl font-bold text-white drop-shadow">{t('minigame.gameOver')}</div>
+                  <div className="text-sm text-white/75">
+                    {t('minigame.score')}: {score} / {target}
+                  </div>
+                  {score >= highScore && score > 0 && (
+                    <div className="text-amber-300 text-sm font-medium">★ {t('minigame.newBest')}</div>
+                  )}
+                  <Button onClick={start} className="mt-2">
+                    <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={start} size="lg">
+                    <Play className="h-5 w-5" /> {t('minigame.play')}
+                  </Button>
+                  <div className="text-[11px] text-white/70 mt-1 text-center max-w-[18rem]">
+                    {t('minigame.goldHint')}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

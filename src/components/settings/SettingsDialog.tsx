@@ -58,13 +58,13 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="flex max-w-2xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription className="sr-only">{t('settings.title')}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="wallpaper">
+        <Tabs defaultValue="wallpaper" className="min-h-0 overflow-y-auto overscroll-contain">
           <TabsList className="w-full">
             <TabsTrigger value="wallpaper" className="flex-1">
               {t('settings.wallpaper')}

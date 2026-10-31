@@ -76,12 +76,12 @@ export default function App() {
       )}
 
       <main
-        className="relative mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10"
+        className="app-main relative mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10"
         style={maxWidthStyle}
       >
-        <header className="flex items-center gap-3 mb-6">
+        <header className="flex flex-col items-stretch gap-3 mb-4 sm:mb-6 sm:flex-row sm:items-center">
           <QuickSearchBar />
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-end gap-2 shrink-0">
             <LanguageToggle />
             <WidgetVisibilityPopover />
             <Button
@@ -89,7 +89,7 @@ export default function App() {
               size="icon"
               onClick={() => setSettingsOpen(true)}
               aria-label="Settings"
-              className="bg-black/35 hover:bg-black/55 border border-white/15"
+              className="h-11 w-11 sm:h-9 sm:w-9 bg-black/35 hover:bg-black/55 border border-white/15"
             >
               <SettingsIcon className="h-4 w-4" />
             </Button>

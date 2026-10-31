@@ -1,3 +1,5 @@
+import { useElementSize } from '@/hooks/useElementSize'
+import { fitBoard } from '@/lib/snake/layout'
 import { useGameSession, useGameState } from './GameSession'
 import { useCallback, useEffect, useRef } from 'react'
 import { RotateCcw, Trophy } from 'lucide-react'
@@ -146,6 +148,7 @@ function loadCell(): number {
 
 export function Game2048() {
   const session = useGameSession()
+  const { ref: boardHostRef, size: available } = useElementSize<HTMLDivElement>()
   const { t } = useT()
   const [board, setBoard] = useGameState<Board>('board', newGame)
   const [score, setScore] = useGameState('score', 0)
@@ -168,6 +171,10 @@ export function Game2048() {
   }
 
   const boardSize = cellSize * SIZE + GAP * (SIZE - 1) + PAD * 2
+
+  const fitted = fitBoard(available.width, available.height, 1, 1)
+  const displayCell = Math.max(0, (Math.min(boardSize, fitted.width) - PAD * 2 - GAP * (SIZE - 1)) / SIZE)
+  const displaySize = displayCell * SIZE + GAP * (SIZE - 1) + PAD * 2
 
   const doMove = useCallback(
     (dir: Dir) => {
@@ -230,7 +237,7 @@ export function Game2048() {
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
       <div className="flex items-center gap-2">
-        <ScoreBoard score={score} best={high} label={t('minigame.score')} className="flex-1" />
+        <ScoreBoard score={score} best={high} label={t('minigame.score')} className="shrink-0 flex-1" />
         <Button variant="secondary" onClick={restart} className="h-full px-3" aria-label={t('minigame.newGame')}>
           <RotateCcw className="h-4 w-4" />
         </Button>
@@ -252,8 +259,8 @@ export function Game2048() {
         </span>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center">
-        <div className="relative" style={{ width: boardSize }}>
+      <div ref={boardHostRef} className="flex-1 min-h-0 min-w-0 overflow-hidden flex items-center justify-center">
+        <div className="relative" style={{ width: displaySize }}>
           <div
             className="rounded-xl select-none touch-none"
             style={{ background: '#bbada0', padding: PAD }}
@@ -276,8 +283,8 @@ export function Game2048() {
               className="grid"
               style={{
                 gap: GAP,
-                gridTemplateColumns: `repeat(${SIZE}, ${cellSize}px)`,
-                gridTemplateRows: `repeat(${SIZE}, ${cellSize}px)`,
+                gridTemplateColumns: `repeat(${SIZE}, ${displayCell}px)`,
+                gridTemplateRows: `repeat(${SIZE}, ${displayCell}px)`,
               }}
             >
               {board.flatMap((row, r) =>
@@ -299,7 +306,7 @@ export function Game2048() {
                       style={{
                         background: st.bg,
                         color: st.text,
-                        fontSize: tileFontSize(v, cellSize),
+                        fontSize: Math.min(tileFontSize(v, displayCell), displayCell * 0.55),
                       }}
                     >
                       {v}

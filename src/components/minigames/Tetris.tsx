@@ -1,6 +1,8 @@
+import { useElementSize } from '@/hooks/useElementSize'
+import { fitBoard } from '@/lib/snake/layout'
 import { useGameSession, useGameState, useGameRef } from './GameSession'
 import { useCallback, useEffect, useRef } from 'react'
-import { Play, RotateCcw, Pause } from 'lucide-react'
+import { Play, RotateCcw, Pause, ArrowLeft, ArrowRight, ArrowDown, ChevronsDown, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMinigameStore } from '@/store/minigame'
 import { useT } from '@/i18n/useT'
@@ -171,6 +173,7 @@ function initialState(): GameState {
 
 export function Tetris() {
   const session = useGameSession()
+  const { ref: boardHostRef, size: available } = useElementSize<HTMLDivElement>()
   const { t } = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nextRef = useRef<HTMLCanvasElement>(null)
@@ -487,49 +490,48 @@ export function Tetris() {
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
-      <ScoreBoard score={score} best={highScore} label={t('minigame.score')} />
+      <ScoreBoard className="shrink-0" score={score} best={highScore} label={t('minigame.score')} />
       <div className="flex gap-3 flex-1 min-h-0">
-        <div
-          className="relative mx-auto"
-          style={{ aspectRatio: `${W} / ${H}`, height: 'min(calc(95vh - 240px), 560px)' }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={W}
-            height={H}
-            className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none"
-          />
-          {!running && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2">
-              {over ? (
-                <>
-                  <div className="text-2xl font-bold text-white drop-shadow">{t('minigame.gameOver')}</div>
-                  {score >= highScore && score > 0 && (
-                    <div className="text-amber-300 text-sm font-medium">★ {t('minigame.newBest')}</div>
-                  )}
-                  <Button onClick={start} className="mt-2">
-                    <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button onClick={start} size="lg">
-                    <Play className="h-5 w-5" /> {t('minigame.play')}
-                  </Button>
-                  <div className="text-[11px] text-white/70 mt-1 text-center max-w-[18rem]">
-                    {t('minigame.tetrisHint')}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          {paused && running && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/45 backdrop-blur-sm rounded-xl">
-              <div className="text-xl font-bold text-white">{t('minigame.paused')}</div>
-            </div>
-          )}
+        <div ref={boardHostRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
+          <div className="relative shrink-0" style={fitBoard(available.width, available.height, W, H)}>
+            <canvas
+              ref={canvasRef}
+              width={W}
+              height={H}
+              className="absolute inset-0 w-full h-full rounded-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4)] select-none"
+            />
+            {!running && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/55 backdrop-blur-sm rounded-xl gap-2">
+                {over ? (
+                  <>
+                    <div className="text-2xl font-bold text-white drop-shadow">{t('minigame.gameOver')}</div>
+                    {score >= highScore && score > 0 && (
+                      <div className="text-amber-300 text-sm font-medium">★ {t('minigame.newBest')}</div>
+                    )}
+                    <Button onClick={start} className="mt-2">
+                      <RotateCcw className="h-4 w-4" /> {t('minigame.playAgain')}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={start} size="lg">
+                      <Play className="h-5 w-5" /> {t('minigame.play')}
+                    </Button>
+                    <div className="text-[11px] text-white/70 mt-1 text-center max-w-[18rem]">
+                      {t('minigame.tetrisHint')}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {paused && running && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/45 backdrop-blur-sm rounded-xl">
+                <div className="text-xl font-bold text-white">{t('minigame.paused')}</div>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-3 flex-shrink-0 w-32">
+        <div className="flex min-h-0 w-20 shrink-0 flex-col gap-2 overflow-y-auto sm:w-32 sm:gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1">
               {t('minigame.next')}
@@ -555,6 +557,16 @@ export function Tetris() {
             </Button>
           )}
         </div>
+      </div>
+      <div className="grid shrink-0 grid-cols-5 gap-2 lg:hidden">
+        {([
+          [ArrowLeft, 'left', () => tryMove(-1, 0)],
+          [RotateCw, 'rotate', rotate],
+          [ArrowRight, 'right', () => tryMove(1, 0)],
+          [ArrowDown, 'down', softDrop],
+          [ChevronsDown, 'drop', hardDrop],
+        ] as const).map(([Icon, label, action]) => <Button key={label} variant="secondary" disabled={!running || paused}
+          aria-label={t(`minigame.touchControls.${label}`)} onClick={action} className="h-12 px-0 touch-manipulation"><Icon className="h-5 w-5" /></Button>)}
       </div>
     </div>
   )
