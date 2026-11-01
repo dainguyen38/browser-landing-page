@@ -1,4 +1,6 @@
 import type { GameKey } from '@/store/minigame'
+import { MAX_HP } from '@/lib/boxing/game'
+import { validRoster } from '@/lib/boxing/characters'
 
 export type GameSnapshot = {
   version: 1
@@ -55,6 +57,31 @@ export function validSnapshot(game: GameKey, value: unknown): value is GameSnaps
         typeof value.refs.claimed?.current === 'boolean'
     }
     if (!object(st) || typeof st.over !== 'boolean' || st.over !== s.over || !nonnegative(st.score) || st.score !== s.score) return false
+    if (game === 'boxing') {
+      const actions = ['idle','jab','cross','hook','uppercut','body','power','flurry','special','guard','dodge','advance','retreat']
+      return (s.roster === undefined || validRoster(s.roster)) && ['spar','arcade','survival','training','versus'].includes(st.mode) && st.mode === s.mode &&
+        integer(st.difficulty) && st.difficulty >= 0 && st.difficulty <= 2 && st.difficulty === s.difficulty && typeof s.muted === 'boolean' &&
+        ['ready','fight','break','over'].includes(st.phase) && s.running === (st.phase === 'fight') && st.over === (st.phase === 'over') &&
+        ['time','left','aiAt'].every(key => nonnegative(st[key])) && st.left <= 45 &&
+        integer(st.round) && st.round >= 1 && st.round <= 3 && integer(st.wave) && st.wave >= 1 &&
+        (st.winner === null || st.winner === 0 || st.winner === 1) &&
+        Array.isArray(st.wins) && st.wins.length === 2 && st.wins.every((v: unknown) => integer(v) && v >= 0) &&
+        Array.isArray(st.roundDamage) && st.roundDamage.length === 2 && st.roundDamage.every(nonnegative) &&
+        Array.isArray(st.fighters) && st.fighters.length === 2 && st.fighters[0].x < st.fighters[1].x &&
+        st.fighters.every((f: any) => object(f) && nonnegative(f.hp) && f.hp <= MAX_HP && ['stamina','meter'].every(key => nonnegative(f[key]) && f[key] <= 100) &&
+          number(f.x) && f.x >= .16 && f.x <= .84 && actions.includes(f.move) &&
+          ['guardUntil','dodgeUntil','counterUntil','busyUntil','stunUntil','moveAt','moveUntil','damage','chain','repeats'].every(key => nonnegative(f[key])) &&
+          number(f.hurtAt) && number(f.lastPunchAt) && (f.lastPunch === null || actions.slice(1,9).includes(f.lastPunch)) &&
+          (f.queued === undefined || f.queued === null || (object(f.queued) && actions.slice(1).includes(f.queued.action) && nonnegative(f.queued.expires))) &&
+          (f.soundPending === undefined || typeof f.soundPending === 'boolean') &&
+          (f.fromX === undefined || (number(f.fromX) && f.fromX >= .16 && f.fromX <= .84)) &&
+          (f.stepAt === undefined || number(f.stepAt)) &&
+          (f.stepVelocity === undefined || (number(f.stepVelocity) && Math.abs(f.stepVelocity) <= 12)) &&
+          (f.hurtMove === undefined || actions.slice(1,9).includes(f.hurtMove)) &&
+          (f.hurtPower === undefined || (nonnegative(f.hurtPower) && f.hurtPower <= 100)) &&
+          object(f.cooldowns) && Object.values(f.cooldowns).every(nonnegative) &&
+          Array.isArray(f.pending) && f.pending.length <= 3 && f.pending.every((p: any) => object(p) && nonnegative(p.at) && actions.slice(1,9).includes(p.punch)))
+    }
     if (game === 'blockblast') {
       const view = s.view
       const validView = view === undefined || (object(view) && number(view.yaw) && view.yaw >= -Math.PI*1.25 && view.yaw <= Math.PI*.75 &&

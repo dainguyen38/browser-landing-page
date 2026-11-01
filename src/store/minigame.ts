@@ -3,9 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Environment } from '@/lib/flappy/scene'
 import type { BirdStyle } from '@/lib/flappy/birds'
 
-export type GameKey = 'snake' | 'flappy' | 'tetris' | 'sudoku' | 'goldminer' | 'dino' | 'g2048' | 'blockblast'
+export type GameKey = 'snake' | 'flappy' | 'tetris' | 'sudoku' | 'goldminer' | 'dino' | 'g2048' | 'blockblast' | 'boxing'
 
-const ALL_GAMES: GameKey[] = ['snake', 'flappy', 'tetris', 'sudoku', 'goldminer', 'dino', 'g2048', 'blockblast']
+const ALL_GAMES: GameKey[] = ['snake', 'flappy', 'tetris', 'sudoku', 'goldminer', 'dino', 'g2048', 'blockblast', 'boxing']
 
 type State = {
   highScores: Record<GameKey, number>
@@ -24,7 +24,7 @@ type Actions = {
 export const useMinigameStore = create<State & Actions>()(
   persist(
     (set, get) => ({
-      highScores: { snake: 0, flappy: 0, tetris: 0, sudoku: 0, goldminer: 0, dino: 0, g2048: 0, blockblast: 0 },
+      highScores: { snake: 0, flappy: 0, tetris: 0, sudoku: 0, goldminer: 0, dino: 0, g2048: 0, blockblast: 0, boxing: 0 },
       flappyRecord: null,
       flappyBird: 'canary',
       flappyEnvironment: 'day',

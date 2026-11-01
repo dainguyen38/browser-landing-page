@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "test:snake": "node --test tests/snake.test.mjs",
     "test:flappy": "node --test tests/flappy.test.mjs",
-    "test:minigame": "node --test tests/snake.test.mjs tests/flappy.test.mjs tests/blockblast.test.mjs tests/blockblast-render.test.mjs tests/minigame-session.test.mjs"
+    "test:minigame": "node --test tests/snake.test.mjs tests/flappy.test.mjs tests/blockblast.test.mjs tests/blockblast-render.test.mjs tests/boxing.test.mjs tests/boxing-render.test.mjs tests/minigame-session.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.4",

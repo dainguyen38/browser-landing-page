@@ -17,7 +17,7 @@ globalThis.localStorage = {
   removeItem: (key) => saved.delete(key),
 }
 after(() => { delete globalThis.localStorage })
-const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048', blockblast: 'BlockBlast' }
+const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048', blockblast: 'BlockBlast', boxing: 'BoxingGame' }
 const entry = [
   ...Object.values(names).map((name) => `export { ${name} } from './src/components/minigames/${name}.tsx'`),
   "export * from './src/components/minigames/GameSession.tsx'",
@@ -25,6 +25,8 @@ const entry = [
   "export * from './src/lib/minigame/keyboard.ts'",
   "export { useMinigameStore } from './src/store/minigame.ts'",
   "export { step as snakeStep } from './src/lib/snake/game.ts'",
+  "export { BoxingArena } from './src/components/minigames/BoxingArena.tsx'",
+  "export { input as boxingInput, update as boxingUpdate } from './src/lib/boxing/game.ts'",
   "export { flap, update as flappyStep } from './src/lib/flappy/game.ts'",
 ].join('\n')
 const output = join(temp, 'games.mjs')
@@ -72,6 +74,7 @@ test('all actual game components restore the same versioned data into fresh Reac
       first.snapshot.state.score = 12
       first.snapshot.state.running = true
       const engine = first.snapshot.refs.engine.current
+      if (game === 'boxing') engine.phase = 'fight'
       if (game === 'tetris') engine.active.y = 6
       if (game === 'dino') { engine.dinoY -= 20; engine.dinoVY = -4 }
       if (game === 'flappy') {
@@ -247,4 +250,80 @@ test('pausing and closing preserve isolated sessions and advance the resume cloc
   assert.equal(snake.pauseVersion, 2)
   assert.equal(snake.paused, false)
   assert.deepEqual(snake.snapshot, data)
+})
+
+test('Boxing restores an in-flight punch and its buffered combo, and rejects corrupted queued commands',()=>{
+  const control=session('boxing');mount('boxing',control)
+  const st=control.snapshot.refs.engine.current
+  st.mode='versus';st.phase='fight';control.snapshot.state.mode='versus';control.snapshot.state.running=true
+  games.boxingInput(st,0,'jab');games.boxingInput(st,0,'cross')
+  assert.equal(games.validSnapshot('boxing',control.snapshot),true)
+  const data=copy(control.snapshot), restored=session('boxing',copy(data));mount('boxing',restored)
+  assert.deepEqual(restored.snapshot,data)
+  const engine=restored.snapshot.refs.engine.current
+  for(let i=0;i<42;i++)games.boxingUpdate(engine,1/60)
+  assert.equal(engine.fighters[0].chain,2)
+  assert.equal(engine.fighters[0].lastPunch,'cross')
+  for(const queued of [{action:'unknown',expires:1},{action:'cross',expires:-1}]) {
+    const bad=copy(data);bad.refs.engine.current.fighters[0].queued=queued
+    assert.equal(games.validSnapshot('boxing',bad),false)
+  }
+})
+test('boxing artwork renders a drawn result safely without a fighter target',()=>{
+  const control=session('boxing');mount('boxing',control)
+  const state=control.snapshot.refs.engine.current
+  state.phase='over';state.over=true;state.winner=null
+  const html=renderToString(React.createElement(games.BoxingArena,{state,event:{kind:'win',player:-1,damage:0},eventAt:0,reducedMotion:true}))
+  assert.doesNotMatch(html,/NaN|undefined/)
+  assert.match(html,/RINGSIDE/)
+})
+
+test('boxing saves independent fighter choices and rejects invalid character IDs',()=>{
+  const control=session('boxing');mount('boxing',control)
+  control.snapshot.state.roster=['nova','titan']
+  assert.equal(games.validSnapshot('boxing',control.snapshot),true)
+  const restored=session('boxing',copy(control.snapshot)),html=mount('boxing',restored)
+  assert.deepEqual(restored.snapshot.state.roster,['nova','titan'])
+  assert.match(html,/nova-portrait.png/);assert.match(html,/titan-portrait.png/)
+  for(const roster of [['nova'],['nova','unknown'],['nova','../../remote']]){
+    const bad=copy(control.snapshot);bad.state.roster=roster
+    assert.equal(games.validSnapshot('boxing',bad),false)
+  }
+  const legacy=copy(control.snapshot);delete legacy.state.roster
+  assert.equal(games.validSnapshot('boxing',legacy),true)
+})
+
+test('boxing preserves movement momentum and hit reaction data while validating new optional fields',()=>{
+  const control=session('boxing');mount('boxing',control)
+  const st=control.snapshot.refs.engine.current
+  st.mode='versus';st.phase='fight';control.snapshot.state.mode='versus';control.snapshot.state.running=true
+  games.boxingInput(st,0,'advance')
+  for(let i=0;i<14;i++)games.boxingUpdate(st,1/60)
+  games.boxingInput(st,0,'power')
+  for(let i=0;i<33;i++)games.boxingUpdate(st,1/60)
+  control.snapshot.state.score=st.score
+  assert.equal(st.fighters[1].hurtMove,'power');assert.ok(st.fighters[1].hurtPower>0)
+  assert.equal(games.validSnapshot('boxing',control.snapshot),true)
+  const restored=session('boxing',copy(control.snapshot));mount('boxing',restored);assert.deepEqual(restored.snapshot,control.snapshot)
+  for(const [key,value] of [['stepVelocity',20],['hurtMove','unknown'],['hurtPower',-1],['hurtPower',101]]){
+    const bad=copy(control.snapshot);bad.refs.engine.current.fighters[1][key]=value
+    assert.equal(games.validSnapshot('boxing',bad),false)
+  }
+})
+
+
+test('boxing saves 1000 HP and renders health as a bounded percentage',()=>{
+  const control=session('boxing');mount('boxing',control)
+  const st=control.snapshot.refs.engine.current
+  st.phase='fight';control.snapshot.state.running=true;st.fighters[0].hp=500
+  const html=mount('boxing',control)
+  assert.match(html,/aria-valuemax="1000" aria-valuenow="500"/)
+  assert.match(html,/class="ringside-health "><span style="width:50%"/)
+  assert.equal(games.validSnapshot('boxing',control.snapshot),true)
+  const restored=session('boxing',copy(control.snapshot));mount('boxing',restored)
+  assert.deepEqual(restored.snapshot,control.snapshot)
+  for(const hp of [1001,-1,Infinity]){
+    const bad=copy(control.snapshot);bad.refs.engine.current.fighters[0].hp=hp
+    assert.equal(games.validSnapshot('boxing',bad),false)
+  }
 })
