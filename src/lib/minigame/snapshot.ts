@@ -1,3 +1,5 @@
+import { validGame as validTienLen, validSettings as validTienLenSettings, TURN_SECONDS } from '@/lib/tlmn/game'
+import { DEAL_DURATION_MS } from '@/lib/tlmn/presentation'
 import type { GameKey } from '@/store/minigame'
 import { MAX_HP } from '@/lib/boxing/game'
 import { validRoster } from '@/lib/boxing/characters'
@@ -38,6 +40,13 @@ export function validSnapshot(game: GameKey, value: unknown): value is GameSnaps
   try {
     if (!object(value) || value.version !== 1 || value.game !== game || !object(value.state) || !object(value.refs) || !plainData(value)) return false
     const s = value.state
+    if (game === 'tlmn') return validTienLenSettings(s.settings) && ['home','setup','table','rules'].includes(s.screen) &&
+      (s.anchorSeat === undefined || (integer(s.anchorSeat) && s.anchorSeat >= 0 && s.anchorSeat < 4)) &&
+      (s.muted === undefined || typeof s.muted === 'boolean') &&
+      (s.stake === undefined || [1000,10000,50000,100000].includes(s.stake)) &&
+      (value.refs.turnClock === undefined || (object(value.refs.turnClock.current) && typeof value.refs.turnClock.current.key === 'string' && value.refs.turnClock.current.key.length <= 100 && nonnegative(value.refs.turnClock.current.remaining) && value.refs.turnClock.current.remaining <= TURN_SECONDS*1000)) &&
+      (value.refs.dealClock === undefined || (object(value.refs.dealClock.current) && typeof value.refs.dealClock.current.roundId === 'string' && value.refs.dealClock.current.roundId.length <= 100 && nonnegative(value.refs.dealClock.current.elapsed) && value.refs.dealClock.current.elapsed <= DEAL_DURATION_MS)) &&
+      (s.match === null ? s.screen !== 'table' : validTienLen(s.match))
     if (typeof s.running !== 'boolean' && game !== 'g2048') return false
     if (game !== 'sudoku' && (!nonnegative(s.score) || typeof s.over !== 'boolean')) return false
     const st = value.refs.engine?.current

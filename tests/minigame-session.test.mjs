@@ -17,7 +17,7 @@ globalThis.localStorage = {
   removeItem: (key) => saved.delete(key),
 }
 after(() => { delete globalThis.localStorage })
-const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048', blockblast: 'BlockBlast', boxing: 'BoxingGame' }
+const names = { snake: 'SnakeGame', flappy: 'FlappyBird', tetris: 'Tetris', sudoku: 'Sudoku', goldminer: 'GoldMiner', dino: 'DinoGame', g2048: 'Game2048', blockblast: 'BlockBlast', boxing: 'BoxingGame', tlmn: 'TienLenGame' }
 const entry = [
   ...Object.values(names).map((name) => `export { ${name} } from './src/components/minigames/${name}.tsx'`),
   "export * from './src/components/minigames/GameSession.tsx'",
@@ -26,6 +26,9 @@ const entry = [
   "export { useMinigameStore } from './src/store/minigame.ts'",
   "export { step as snakeStep } from './src/lib/snake/game.ts'",
   "export { BoxingArena } from './src/components/minigames/BoxingArena.tsx'",
+  "export { TienLenPayouts } from './src/components/minigames/TienLenGame.tsx'",
+  "export { useDcoinStore } from './src/store/dcoin.ts'",
+  "export * as tlmn from './src/lib/tlmn/game.ts'",
   "export { input as boxingInput, update as boxingUpdate } from './src/lib/boxing/game.ts'",
   "export { flap, update as flappyStep } from './src/lib/flappy/game.ts'",
 ].join('\n')
@@ -197,7 +200,7 @@ test('unknown versions, mismatched games, missing fields, non-finite values and 
       (s) => { s.game = game === 'snake' ? 'flappy' : 'snake' },
       (s) => { s.state = {} },
       (s) => { s.state.score = NaN },
-      (s) => { if (game === 'g2048') s.state.board = []; else s.refs = {} },
+      (s) => { if (game === 'g2048') s.state.board = []; else if (game === 'tlmn') s.state.settings = {}; else s.refs = {} },
     ]) {
       const bad = copy(valid)
       mutate(bad)
@@ -326,4 +329,84 @@ test('boxing saves 1000 HP and renders health as a bounded percentage',()=>{
     const bad=copy(control.snapshot);bad.refs.engine.current.fighters[0].hp=hp
     assert.equal(games.validSnapshot('boxing',bad),false)
   }
+})
+
+test('Tiến lên integrates with pause, restores play and never renders private hands during handoff',()=>{
+  for(const humanCount of [1,2,4]){
+    const control=session('tlmn');mount('tlmn',control)
+    const config={...games.tlmn.defaultSettings(),humanCount};config.rules.instantWinEnabled=false
+    let match=games.tlmn.createGame(config,25)
+    // Advance bots until the first human turn using the same public observation API as the UI.
+    while(!match.players[match.currentSeat].human){
+      const view=games.tlmn.observation(match,match.currentSeat)
+      const action=games.tlmn.nextAction(match,match.currentSeat,games.tlmn.chooseBotAction(view,games.tlmn.legalMoves(view),'normal'))
+      match=games.tlmn.applyAction(match,action).state
+    }
+    control.snapshot.state.settings=config;control.snapshot.state.match=match;control.snapshot.state.screen='table'
+    assert.equal(games.validSnapshot('tlmn',control.snapshot),true)
+    const data=copy(control.snapshot),html=mount('tlmn',control)
+    if(humanCount>1){
+      assert.match(html,/Tôi đã sẵn sàng/)
+      assert.doesNotMatch(html,/aria-pressed=/)
+      for(const card of match.players.flatMap(p=>p.hand))assert.ok(!html.includes(`aria-label="${games.tlmn.cardName(card)}"`))
+    }else{
+      for(const card of match.players[0].hand)assert.ok(html.includes(`aria-label="${games.tlmn.cardName(card)}"`))
+      for(const card of match.players.slice(1).flatMap(p=>p.hand))assert.ok(!html.includes(`aria-label="${games.tlmn.cardName(card)}"`))
+    }
+    const restored=session('tlmn',copy(data));mount('tlmn',restored)
+    assert.deepEqual(restored.snapshot,data)
+    assert.equal(restored.paused,true)
+    // Core/UI integration through a whole local game, with each turn re-rendered on a new mount.
+    let turns=0
+    while(match.phase==='playing'){
+      const view=games.tlmn.observation(match,match.currentSeat)
+      const action=games.tlmn.nextAction(match,match.currentSeat,games.tlmn.chooseBotAction(view,games.tlmn.legalMoves(view),'normal',()=>.5))
+      const result=games.tlmn.applyAction(match,action);assert.equal(result.error,null);match=result.state
+      restored.snapshot.state.match=match
+      const markup=mount('tlmn',restored)
+      assert.equal(games.validSnapshot('tlmn',restored.snapshot),true)
+      if(match.phase==='playing'&&humanCount>1)assert.doesNotMatch(markup,/aria-pressed=/)
+      assert.ok(++turns<=208)
+    }
+    assert.doesNotMatch(mount('tlmn',restored),/<table|tl-results/)
+    assert.equal(match.scores.reduce((a,b)=>a+b),0)
+    restored.snapshot.state.match=games.tlmn.createGame(config,32,match)
+    assert.equal(games.validSnapshot('tlmn',restored.snapshot),true)
+    assert.equal(restored.snapshot.state.match.startingSeat,match.winner)
+  }
+})
+
+test('coin table renders four seated portraits, face-down counts, timer and settlement columns',()=>{
+  const wallet=games.useDcoinStore
+  wallet.setState({round:null,balances:{'human:0':1_000_000,'human:1':1_000_000,'human:2':1_000_000,'human:3':1_000_000}})
+  const config=games.tlmn.defaultSettings();config.rules.instantWinEnabled=false
+  assert.equal(wallet.getState().startRound(config,10_000).error,null)
+  const control=session('tlmn');mount('tlmn',control)
+  control.snapshot.state.match=wallet.getState().round.game;control.snapshot.state.screen='table'
+  const html=mount('tlmn',control)
+  for(let seat=0;seat<4;seat++)assert.ok(html.includes(`data-seat="${seat}"`))
+  assert.equal((html.match(/class="tl-mini-fan"/g)??[]).length,3)
+  assert.equal((html.match(/data-seat="0"/g)??[]).length,1)
+  assert.match(html,/tl-player tl-hand-player/)
+  assert.equal((html.match(/\/assets\/tlmn\/avatars\/[a-z]+\.jpg/g)??[]).length,4)
+  assert.match(html,/role="timer"/);assert.match(html,/TỔNG CƯỢC/)
+  for(const mutate of [s=>s.state.stake=-1,s=>s.refs.turnClock.current.remaining=30_001]){
+    const bad=copy(control.snapshot);mutate(bad);assert.equal(games.validSnapshot('tlmn',bad),false)
+  }
+  wallet.getState().completeDeal(wallet.getState().round.id)
+  let guard=0
+  while(!wallet.getState().round.settled){
+    const round=wallet.getState().round,st=round.game,view=games.tlmn.observation(st,st.currentSeat)
+    const action=games.tlmn.nextAction(st,st.currentSeat,games.tlmn.chooseBotAction(view,games.tlmn.legalMoves(view),'normal',()=>.5))
+    assert.equal(wallet.getState().play(round.id,action).error,null);assert.ok(++guard<210)
+  }
+  control.snapshot.state.match=wallet.getState().round.game
+  const result=mount('tlmn',control)
+  assert.doesNotMatch(result,/<table|tl-results|Thay đổi ví|Đã cược|Số dư/)
+  const finished=wallet.getState().round.game
+  const popup=renderToString(React.createElement(games.TienLenPayouts,{players:finished.players,winner:finished.winner,pot:40_000}))
+  assert.equal((popup.match(/<li /g)??[]).length,4)
+  assert.match(popup,/40\.000/)
+  assert.doesNotMatch(popup,/<table|Thay đổi ví|Đã cược|Số dư/)
+  assert.doesNotMatch(result,/Điểm ảo|Xếp hạng phiên|Điểm ván/)
 })

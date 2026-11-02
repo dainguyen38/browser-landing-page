@@ -216,6 +216,7 @@ const en = {
       g2048: '2048',
       blockblast: 'Block Blast',
       boxing: 'Boxing',
+      tlmn: 'Tiến lên miền Nam',
     },
     play: 'Play',
     playAgain: 'Play again',

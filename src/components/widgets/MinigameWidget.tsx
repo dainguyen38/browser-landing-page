@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Gamepad2, Swords, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, Pause, X, RotateCcw, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Club, Swords, Worm, Bird, Boxes, Grid3x3, Pickaxe, Grid2x2, Play, Pause, X, RotateCcw, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GameSessionContext, GameErrorBoundary, createGameSession, type GameSession } from '@/components/minigames/GameSession'
 import { newSnapshot, validSnapshot } from '@/lib/minigame/snapshot'
@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { DcoinWallet } from '@/components/minigames/DcoinWallet'
+import { TienLenGame } from '@/components/minigames/TienLenGame'
 import { BoxingGame } from '@/components/minigames/BoxingGame'
 import { BlockBlast } from '@/components/minigames/BlockBlast'
 import { SnakeGame } from '@/components/minigames/SnakeGame'
@@ -41,6 +43,7 @@ type GameDef = {
 }
 
 const GAMES: GameDef[] = [
+  { key: 'tlmn', icon: Club, gradient: 'from-emerald-500/30 to-amber-500/20', color: 'text-emerald-200', Component: TienLenGame },
   { key: 'boxing', icon: Swords, gradient: 'from-rose-500/30 to-blue-500/20', color: 'text-rose-200', Component: BoxingGame },
   { key: 'blockblast', icon: Boxes, gradient: 'from-blue-500/30 to-fuchsia-500/20', color: 'text-blue-200', Component: BlockBlast },
   {
@@ -163,7 +166,7 @@ export function MinigameWidget() {
   }, [active, paused])
 
   const activeGame = active ? GAMES.find((g) => g.key === active) : null
-  const immersive = active === 'flappy' || active === 'snake' || active === 'blockblast' || active === 'boxing'
+  const immersive = active === 'flappy' || active === 'snake' || active === 'blockblast' || active === 'boxing' || active === 'tlmn'
 
   return (
     <>
@@ -175,6 +178,7 @@ export function MinigameWidget() {
           </h2>
         </header>
 
+        <DcoinWallet compact/>
         <div
           className="grid gap-3 flex-1 min-h-0 overflow-y-auto pr-1 content-start justify-center"
           style={{ gridTemplateColumns: 'repeat(auto-fit, 96px)' }}
@@ -229,7 +233,7 @@ export function MinigameWidget() {
             </GameSessionContext.Provider>}
           </div>
           {active && !paused && !fault && <Button variant="secondary" size="icon" aria-label={t('minigame.pause')}
-            className={`absolute ${immersive && active !== 'boxing' ? 'bottom-3 right-3' : 'top-2 right-14'} z-30 h-11 w-11 rounded-full border border-white/20 bg-slate-950/70 text-white shadow-lg backdrop-blur-md ${active === 'blockblast' ? 'blockblast-pause' : ''}`}
+            className={`absolute ${immersive && active !== 'boxing' && active !== 'tlmn' ? 'bottom-3 right-3' : 'top-2 right-14'} z-30 h-11 w-11 rounded-full border border-white/20 bg-slate-950/70 text-white shadow-lg backdrop-blur-md ${active === 'blockblast' ? 'blockblast-pause' : ''}`}
             onClick={() => sessions.current.get(active)!.setPaused(true)}><Pause className="h-5 w-5" /></Button>}
           {(paused || fault) && <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto rounded-2xl bg-slate-950/80 p-4 backdrop-blur-md">
             <div className="m-auto flex max-w-sm flex-col items-center gap-4 text-center">

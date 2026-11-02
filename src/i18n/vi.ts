@@ -216,6 +216,7 @@ const vi: Dict = {
       g2048: '2048',
       blockblast: 'Block Blast',
       boxing: 'Boxing',
+      tlmn: 'Tiến lên miền Nam',
     },
     play: 'Chơi',
     playAgain: 'Chơi lại',
